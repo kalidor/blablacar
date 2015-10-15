@@ -95,6 +95,10 @@ $avis_req_post_confirm = {
   :data => "rating_preview[confirm]=&rating_preview[_token]=%s",
   :header => ["Content-Type", "application/x-www-form-urlencoded"]
 }
+$rating_received = {
+  :method => Net::HTTP::Post,
+  :url => "dashboard/ratings/received?page=%d",
+}
 
 def save_cookie(cookie)
   vputs __method__.to_s
@@ -405,7 +409,8 @@ class Blablacar
   # (Step2) Post id/passwd to the send_credentials web page
   def send_credentials
     vputs __method__.to_s
-    login_req = setup_http_request($ident % {:user => $CONF['user'], :pass => $CONF['pass']}, @cookie)
+    $ident[:data] = $ident[:data] % {:user => $CONF['user'], :pass => $CONF['pass']}
+    login_req = setup_http_request($ident, @cookie)
     res = @http.request(login_req)
     get_cookie(res)
   end
@@ -437,7 +442,7 @@ class Blablacar
   def get_dashboard
     dashboard_req = setup_http_request($dashboard, @cookie)
     res = @http.request(dashboard_req)
-    if res.code=='400' or res['location'] == "https://www.blablacar.fr/send_credentials"
+    if res.code=='400' or res['location'] == "https://www.blablacar.fr/identification"
       raise AuthenticationFailed, "Can't get logged in"
     end
     res.body.force_encoding('utf-8')
@@ -506,7 +511,7 @@ class Blablacar
       #  puts "%80s" % d
       #  puts "%80s" % m
       else
-        ret << {:msg => "[%s] %s" % [hours[id], msgs[id]], :respond => url, :token => token} 
+        ret << {:msg => "[%s] %s" % [hours[id], msgs[id]], :respond => url, :token => token}
       end
     }
     ret
@@ -553,7 +558,7 @@ class Blablacar
       puts "[%s] %s, %s" % [dates[id], names[id], trips[id].gsub("à", "->")]
       msg << [dates[id], names[id], trips[id], urls[id]]
     }
-    urls.map{|u| 
+    urls.map{|u|
       get_conversations(u).map{|m|
       puts "%s (%s)" % [m[:msg], msg[:token]]
       puts "-"*20
@@ -567,7 +572,7 @@ class Blablacar
   end
   def get_all_messages
     get_info_and_link_messages(true)
-  end 
+  end
 
   def search_trip(city_start, city_end, date)
     vputs __method__.to_s
@@ -640,7 +645,7 @@ class Blablacar
     else
       authentication()
     end
-    
+
     data = nil
     begin
       data = get_dashboard

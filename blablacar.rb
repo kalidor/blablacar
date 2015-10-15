@@ -12,7 +12,7 @@ options = {}
 parser = OptionParser.new do |opts|
   opts.banner = "Usage: #$0 <command>=<arg>"
   opts.on("-C", "--configuration=path/to/file", "Configuration file to use. Read ~/.blablacar.rc by default") do |v| options[:configuration] = v; end
-  opts.on("-a", "--opinion=opinion", "Send an 'opinion' to a user") do |v| options[:avis] = v; end
+  opts.on("-a", "--avis=avis", "Send an 'opinion' to a user") do |v| options[:avis] = v; end
   opts.on("-c", "--code=CODE", "Code to validate a trip") do |v| options[:code] = v; end
   opts.on("-d", "--driver", "Driver name to evaluate and leave an opinion") do |v| options[:driver] = v; end
   opts.on("-l", "--list", "List planned trip with passengers") do |v| options[:list] = v; end
