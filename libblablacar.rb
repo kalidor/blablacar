@@ -96,8 +96,8 @@ $avis_req_post_confirm = {
   :header => ["Content-Type", "application/x-www-form-urlencoded"]
 }
 $rating_received = {
-  :method => Net::HTTP::Post,
-  :url => "dashboard/ratings/received?page=%d",
+  :method => Net::HTTP::Get,
+  :url => "/dashboard/ratings/received?page=%s",
 }
 
 def save_cookie(cookie)
