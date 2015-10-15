@@ -54,6 +54,13 @@ $messages = {
   :url => "/questions-answers",
 }
 
+$respond_to_message = {
+  :method => Net::HTTP::Post,
+  :url => "",
+  :data => "message[content]=%s&message[_token]=%s",
+  :header => ["Content-Type", "application/x-www-form-urlencoded"]
+}
+
 $money = {
   :method => Net::HTTP::Get,
   :url => "/dashboard/account/money-available",
@@ -167,6 +174,9 @@ def setup_http_request(obj, cookie=nil, args={})
 end
 
 class AuthenticationFailed < StandardError
+end
+
+class SendReponseMessageFailed < StandardError
 end
 
 # Generic Notification class
@@ -489,7 +499,7 @@ class Blablacar
   end
 
   # Display message from link
-  def get_conversations(url)
+  def get_conversations(url, check=nil)
     vputs __method__.to_s
     messages_req = setup_http_request($messages, @cookie, {:url => url})
     res = @http.request(messages_req)
@@ -506,17 +516,35 @@ class Blablacar
       # When I have already responded
       #  d = "[%s] %s" % [hours[id], msgs[id].split(":").first]
       #  d.strip!
-      #  m = msgs[id].split(":")[1..-1].join(":")
-      #  m.strip!
-      #  puts "%80s" % d
-      #  puts "%80s" % m
+      if check
+         m = msgs[id].split(":")[1..-1].join(":")
+        ret << m.strip!
+      end
       else
-        ret << {:msg => "[%s] %s" % [hours[id], msgs[id]], :respond => url, :token => token}
+        if not check
+          ret << {:msg => "[%s] %s" % [hours[id], msgs[id]], :url => url, :token => token}
+        end
       end
     }
     ret
   end
 
+  def respond_to_question(url, token, resp)
+    vputs __method__.to_s
+    messages_req = setup_http_request($respond_to_message, @cookie, {:url => url, :arg => [resp, token]})
+    res = @http.request(messages_req)
+    body = CGI.unescapeHTML(res.body.force_encoding('utf-8'))
+    # Checking...
+    if res.code == "302"
+      get_conversations(res['location']).map{|m|
+        if m.include?(resp)
+          return true
+        end
+      }
+      return false
+    end
+    raise SendReponseMessageFailed, "Cannot received expected 302 code..."
+  end
 
   # Get all *UNREAD* public questions link
   def get_info_and_link_messages(all=nil)
@@ -558,20 +586,32 @@ class Blablacar
       puts "[%s] %s, %s" % [dates[id], names[id], trips[id].gsub("à", "->")]
       msg << [dates[id], names[id], trips[id], urls[id]]
     }
-    urls.map{|u|
-      get_conversations(u).map{|m|
-      puts "%s (%s)" % [m[:msg], msg[:token]]
-      puts "-"*20
-      }
-    }
+    # ex: [{:msg=>"[Aujourd'hui à 09h48] Miguel  L : \"BONJOUR  GREG  vous  arrive jusque  a la  gare pardieu\"", :url=>"/messages/respond/kAxP4rA..."]
+    #urls.map{|u|
+    #  get_conversations(u).map{|m|
+    #  puts "%s (%s)" % [m[:msg], msg[:token]]
+    #  puts "-"*20
+    #  }
+    #}
     return msg
   end
 
-  def get_unread_messages
+  def get_messages
     get_info_and_link_messages
   end
-  def get_all_messages
-    get_info_and_link_messages(true)
+
+  # TODO ?
+  #def get_all_messages
+  #  get_info_and_link_messages(true)
+  #end
+
+  def get_opinion(page=1)
+    vputs __method__.to_s
+    req = setup_http_request($rating_received, @cookie, {:arg => [page]})
+    res = @http.request(req)
+    ret = res.body.scan(/<h3 class="Rating-grade Rating-grade--\d">(.*)<\/h3>\s*<p class="Rating-text"><strong>(.*): <\/strong>(.*)<\/p>\s*<\/div>\s*<footer class="Speech-info">\s*<time class="Speech-date" datetime="[^"]*">(.*)<\/time>/)
+    puts ret.inspect
+
   end
 
   def search_trip(city_start, city_end, date)

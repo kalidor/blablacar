@@ -11,19 +11,20 @@ require 'libblablacar'
 options = {}
 parser = OptionParser.new do |opts|
   opts.banner = "Usage: #$0 <command>=<arg>"
-  opts.on("-C", "--configuration=path/to/file", "Configuration file to use. Read ~/.blablacar.rc by default") do |v| options[:configuration] = v; end
-  opts.on("-a", "--avis=avis", "Send an 'opinion' to a user") do |v| options[:avis] = v; end
-  opts.on("-c", "--code=CODE", "Code to validate a trip") do |v| options[:code] = v; end
+  opts.on("-C", "--configuration <path_to_file>", "Configuration file to use. Read ~/.blablacar.rc by default") do |v| options[:configuration] = v; end
+  opts.on("-a", "--avis <OPINION>", "Send an 'opinion' to a user") do |v| options[:avis] = v; end
+  opts.on("-g", "--avis-recu [PAGE]", "Display user opinion") do |v| options[:avis_recu] = v || ''; end
+  opts.on("-c", "--code <CODE>", "Code to validate a trip") do |v| options[:code] = v; end
   opts.on("-d", "--driver", "Driver name to evaluate and leave an opinion") do |v| options[:driver] = v; end
   opts.on("-l", "--list", "List planned trip with passengers") do |v| options[:list] = v; end
-  opts.on("-n", "--note=note", "Send evaluation note to a user") do |v| options[:note] = v; end
+  opts.on("-n", "--note <NOTE>", "Send evaluation note to a user") do |v| options[:note] = v; end
   opts.on("-N", "--notifications", "Check notifications") do |v| options[:notifications] = v; end
   opts.on("-m", "--message", "Get news messages") do |v| options[:message] = v; end
   opts.on("-M", "--money-available", "Get the available amount of money") do |v| options[:money] = v; end
   opts.on("-p", "--passenger", "Passenger name to evaluate and leave an opinion") do |v| options[:passenger] = v; end
   opts.on("-s", "--money-status", "Get the money transfer status") do |v| options[:money_status] = v; end
   opts.on("-t", "--transfert-request", "Make money transfert request") do |v| options[:transfert] = v; end
-  opts.on("-u", "--user=user", "Validate a trip with this guy") do |v| options[:user] = v; end
+  opts.on("-u", "--user user", "Validate a trip with this guy") do |v| options[:user] = v; end
   #opts.on("-v", "--[no-]verbose", "Run verbosely") do |v| options[:verbose] = v; end
   opts.on_tail("-h", "--help", "Show this help message") do puts opts; exit 0; end
   opts.on_tail("Configuration sample (#{ENV['HOME']}/.blablacar.rc):")
@@ -47,15 +48,47 @@ iputs "Starting: %s" % Time.now.to_s
 blabla = Blablacar.new
 blabla.run(options[:configuration])
 
-#require 'pp'
-#pp blabla.get_conversations("/trajet-annecy-lyon-270926179")
-#exit
 #blabla.search_trip("Annecy", "Lyon", "30/09/2015")
+
+if options[:avis_recu]
+  if options[:avis_recu].empty?
+    blabla.get_opinion()
+  else
+    blabla.get_opinion(options[:avis_recu])
+  end
+end
 
 if options[:message]
   if blabla.messages?
     puts "#{blabla.messages} nouveau(x) message(s)"
-    blabla.get_unread_messages
+    msgs = blabla.get_messages
+    msgs.each_with_index{|m, ind|
+      puts "#{ind}) %{msg}" % m
+    }
+    while true do
+      puts "('q' for quit) Respond to > "
+      ind = STDIN.readline.chomp!
+      if ind == "n" or ind == "next"
+        break
+      end
+      if ind == "q" or ind == "quit"
+        exit
+      end
+      if ind.to_i > (msg.length - 1)
+        puts "[!] Invalid index"
+        next
+      end
+      puts "Enter message > " 
+      response = STDIN.readline.chomp!
+      if response.empty?
+        puts "[!] Empty message"
+        next
+      end
+      if blabla.respond_to_question(msgs[id][:url], msgs[id][:token], response)
+        puts "Message sent"
+        break
+      end
+    end
   else
     puts "Pas de nouveaux messages"
   end
