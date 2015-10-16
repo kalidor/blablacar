@@ -198,7 +198,7 @@ if options[:list]
         next
       end
       trips[id][:who].each_with_index{|v, i|
-        puts "\t-%s [%s] (%s) :: %s" % [trips[id][:who][i], trips[id][:note][i], trips[id][:phone][i], trips[id][:actual_trip][i]]
+        puts "\t-%s [%s] (%s) :: %s %s" % [trips[id][:who][i], trips[id][:note][i], trips[id][:phone][i], trips[id][:actual_trip][i], trips[id][:status][i] == "annulée" ? ">> ANNULÉE <<" : ""]
       }
     }
   end

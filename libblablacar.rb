@@ -490,7 +490,8 @@ class Blablacar
       trips[id][:when] = res.scan(/<p class="my-trip-elements size16 push-left no-clear my-trip-date">\s(.*)\s*<\/p>/).flatten.map{|c| c.strip!}.first
       trips[id][:who] = res.scan(/<a href="\/membre\/profil\/.*" class="blue">\s*(.*)\s*<\/a>/).flatten.map{|c| c.strip!}
       trips[id][:note] = res.scan(/<span class="bold dark-gray">(.*)<\/span><span class="fade-gray">/).flatten
-      trips[id][:phone] = res.scan(/<span class="mobile">(.*)<\/span>/).flatten
+      trips[id][:phone] = res.scan(/<span class="mobile[^"]*">(.*)<\/span>/).flatten
+      trips[id][:status] = res.scan(/<div class="pull-right bold (?:green|dark-gray) size16 uppercase">(.*)<\/div>/).flatten
       trips[id][:actual_trip] = res.scan(/<ul class="unstyled passenger-trip size17">\s*<li>\s([a-zA-Zé\ \-]*)\s*<\/li>/).flatten.map{|c| c.strip!}
     }
     # Sort by date
