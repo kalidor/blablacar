@@ -9,7 +9,7 @@ require 'uri'
 require 'cgi' # unescape
 require 'json'
 require 'yaml'
-$LOAD_PATH << "/home/gch/bin/blabla/"
+$LOAD_PATH.unshift(File.expand_path(File.dirname(__FILE__)))
 require 'helpers'
 
 $CONF = nil

@@ -5,7 +5,7 @@
 # Published under the terms of the wtfPLv2
 
 require 'optparse'
-$LOAD_PATH << "/home/gch/bin/blabla/"
+$LOAD_PATH.unshift(File.expand_path(File.dirname(__FILE__)))
 require 'libblablacar'
 
 options = {}
