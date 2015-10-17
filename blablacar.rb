@@ -29,7 +29,7 @@ parser = OptionParser.new do |opts|
   opts.on_tail("-h", "--help", "Show this help message") do puts opts; exit 0; end
   opts.on_tail("Configuration sample (#{ENV['HOME']}/.blablacar.rc):")
   opts.on_tail("user: <email>")
-  opts.on_tail("pass: <password>")
+  opts.on_tail('pass: "<password>"')
   opts.on_tail("cookie: /tmp/blablacar.cookie")
   opts.on_tail("")
   opts.on_tail("Example:")
