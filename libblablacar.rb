@@ -432,7 +432,7 @@ class Blablacar
         exit 2
       end
       if not $CONF[i]
-        aputs "Configuration error: key #{i} empty"
+        aputs "Configuration error: key #{i} is empty"
         exit 2
       end
     }

@@ -31,6 +31,7 @@ parser = OptionParser.new do |opts|
   opts.on_tail("user: <email>")
   opts.on_tail('pass: "<password>"')
   opts.on_tail("cookie: /tmp/blablacar.cookie")
+  opts.on_tail("The cookie will be saved after the first authentication.")
   opts.on_tail("")
   opts.on_tail("Example:")
   opts.on_tail("#$0 --avis 'Nice trip' --user 'Pierre P' --note 5 --passenger")
