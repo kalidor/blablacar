@@ -425,6 +425,19 @@ class Blablacar
     get_cookie(res)
   end
 
+  def check_conf
+    ['user', 'pass', 'cookie'].map{|i|
+      if not $CONF.keys.include?(i)
+        aputs "Configuration error: key #{i} not found"
+        exit 2
+      end
+      if not $CONF[i]
+        aputs "Configuration error: key #{i} empty"
+        exit 2
+      end
+    }
+  end
+
   def load_conf(file=nil)
     f = file || File.join(ENV['HOME'], '.blablacar.rc')
     begin
@@ -680,6 +693,7 @@ class Blablacar
   # Main function
   def run(conf=nil)
     load_conf(conf)
+    check_conf()
     if local_cookie?
       vputs "Using existing cookie"
       @cookie = File.read($CONF['cookie'])
