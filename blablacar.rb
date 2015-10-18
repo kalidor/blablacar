@@ -23,7 +23,7 @@ parser = OptionParser.new do |opts|
   opts.on("-M", "--money-available", "Get the available amount of money") do |v| options[:money] = v; end
   opts.on("-p", "--passenger", "Passenger name to evaluate and leave an opinion") do |v| options[:passenger] = v; end
   opts.on("-s", "--money-status", "Get the money transfer status") do |v| options[:money_status] = v; end
-  opts.on("-t", "--transfert-request", "Make money transfert request") do |v| options[:transfert] = v; end
+  opts.on("-t", "--transfert-request", "Make money transfert request") do |v| options[:transfer] = v; end
   opts.on("-u", "--user user", "Validate a trip with this guy") do |v| options[:user] = v; end
   #opts.on("-v", "--[no-]verbose", "Run verbosely") do |v| options[:verbose] = v; end
   opts.on_tail("-h", "--help", "Show this help message") do puts opts; exit 0; end
