@@ -49,7 +49,7 @@ Money status (lastpage):
 
 Send an opinion about a passenger / driver:
 ```bash
-[8:40 ~/bin/blabla:master]% ./blablacar.rb -p --user "Christophe R" --avis "Sympa, ponctuel. Des discussions vraiment interessantes\!\!" Je recommande --note 5
+[8:40 ~/bin/blabla:master]% ./blablacar.rb -p --user "Christophe R" --avis "Sympa, ponctuel. Des discussions vraiment interessantes\!\! Je recommande" --note 5
 [+] Starting: 2015-10-15 08:41:12 +0200
 [+] Authenticated!
 Apres votre voyage Bron-Annecy, laissez un avis a votre passager Christophe R
