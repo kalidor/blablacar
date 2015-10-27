@@ -9,7 +9,9 @@ $LOAD_PATH.unshift(File.expand_path(File.dirname(__FILE__)))
 require 'libblablacar'
 
 options = {}
+options[:interactive] = true
 parser = OptionParser.new do |opts|
+  opts.banner = "This is an example about what you can do with libblablacar.rb. Don't hesitate to improve it and let me know about it!"
   opts.banner = "Usage: #$0 <command>=<arg>"
   opts.on("-C", "--configuration <path_to_file>", "Configuration file to use. Read ~/.blablacar.rc by default") do |v| options[:configuration] = v; end
   opts.on("-a", "--avis <OPINION>", "Send an 'opinion' to a user") do |v| options[:avis] = v; end
@@ -18,8 +20,9 @@ parser = OptionParser.new do |opts|
   opts.on("-d", "--driver", "Driver name to evaluate and leave an opinion") do |v| options[:driver] = v; end
   opts.on("-l", "--list", "List planned trip with passengers") do |v| options[:list] = v; end
   opts.on("-n", "--note <NOTE>", "Send evaluation note to a user") do |v| options[:note] = v; end
+  opts.on("-i", "--interactive <ON/OFF>", "Enable/disable interactive mode (default is ENABLED)") do |v| options[:interactive] = v; end
   opts.on("-N", "--notifications", "Check notifications") do |v| options[:notifications] = v; end
-  opts.on("-m", "--message", "Get news messages") do |v| options[:message] = v; end
+  opts.on("-m", "--message", "Get news messages. If new message, interactive mode allow you to respond") do |v| options[:message] = v; end
   opts.on("-M", "--money-available", "Get the available amount of money") do |v| options[:money] = v; end
   opts.on("-p", "--passenger", "Passenger name to evaluate and leave an opinion") do |v| options[:passenger] = v; end
   opts.on("-s", "--money-status", "Get the money transfer status") do |v| options[:money_status] = v; end
@@ -45,7 +48,21 @@ if options.length == 0
   exit 0
 end
 
+class String
+  def to_boolean
+    case self
+      when /^true$/i, /^on$/i, /^enable$/i
+        true
+      when /^false$/i, /^off$/i, /^disable$/i
+        false
+      else
+        nil
+    end
+  end
+end
+
 iputs "Starting: %s" % Time.now.to_s
+
 blabla = Blablacar.new
 blabla.run(options[:configuration])
 
@@ -61,45 +78,50 @@ end
 
 if options[:message]
   if blabla.messages?
-    puts "#{blabla.messages} nouveau(x) message(s)"
+    puts "#{blabla.messages} new message(s)"
     msgs = blabla.get_messages
     msgs.each_with_index{|m, ind|
       puts "#{ind}) %{msg}" % m
+      puts "#{}"
     }
-    while true do
-      puts "('q' for quit) Respond to > "
-      ind = STDIN.readline.chomp!
-      if ind == "n" or ind == "next"
-        break
-      end
-      if ind == "q" or ind == "quit"
-        exit
-      end
-      if ind.to_i > (msg.length - 1)
-        puts "[!] Invalid index"
-        next
-      end
-      puts "Enter message > " 
-      response = STDIN.readline.chomp!
-      if response.empty?
-        puts "[!] Empty message"
-        next
-      end
-      if blabla.respond_to_question(msgs[id][:url], msgs[id][:token], response)
-        puts "Message sent"
-        break
+    if options[:interactive].to_boolean != true
+      puts "Interactive mode disabled"
+    else
+      while true do
+        puts "('q' for quit, input question num to respond to) Respond to > "
+        ind = STDIN.readline.chomp!
+        if ind == "n" or ind == "next"
+          break
+        end
+        if ind == "q" or ind == "quit"
+          exit
+        end
+        if msgs[ind] == nil
+          puts "[!] Invalid index"
+          next
+        end
+        puts "Enter message (think to escape '!')> "
+        response = STDIN.readline.chomp!
+        if response.empty?
+          puts "[!] Empty message"
+          next
+        end
+        if blabla.respond_to_question(msgs[ind][:url], msgs[ind][:token], response)
+          puts "Message sent"
+          break
+        end
       end
     end
   else
-    puts "Pas de nouveaux messages"
+    puts "No new messages"
   end
 end
 
 if options[:notifications]
   if not blabla.notifications?
-    puts "Aucune notification"
+    puts "None notification"
   else
-    puts "Notifications:"
+    puts "Notification:"
     blabla.notifications.map{|notif|
       puts notif.desc
     }
@@ -130,7 +152,7 @@ if options[:avis]
   if blabla.notifications[i].instance_of?(AvisNotification)
     puts blabla.notifications[i].desc
     if blabla.notifications[i].send(s, options[:note], options[:avis])
-      puts "Avis envoyé"
+      puts "Opinion sent"
     end
   end
 end
@@ -149,9 +171,9 @@ if options[:code]
     puts blabla.notifications[i].desc
     if options[:user] == blabla.notifications[i].user
       if blabla.notifications[i].confirm(options[:code])
-        puts "[+] Code ok pour #{blabla.notifications[i].user}"
+        puts "[+] Code ok for #{blabla.notifications[i].user}"
       else
-        puts "[-] Code ko pour #{blabla.notifications[i].user}"
+        puts "[-] Code ko for #{blabla.notifications[i].user}"
       end
     end
   end
@@ -159,9 +181,9 @@ end
 
 if options[:money]
   # Is money available for transfer ?
-  puts "Total déjà demandé: #{blabla.virement.total}"
+  puts "Total already requested: #{blabla.virement.total}"
   if blabla.virement.available?
-    puts "Montant disponible: #{blabla.virement.available?}"
+    puts "Available money: #{blabla.virement.available?}"
   else
     puts "No money available"
   end
@@ -186,14 +208,14 @@ end
 
 if options[:list]
   # See passengers for all future trips
-  puts "Récupération des prochains trajets avec les passagers:"
+  puts "Getting next planned trips:"
   trips = blabla.get_planned_passengers()
   if trips.length == 0
     puts "No future planned trip(s)"
   else
     puts "See planned_passengers:"
     trips.keys.map{|id|
-      puts "%s (%s). Annonce vue %s fois" % [trips[id][:trip], trips[id][:when], trips[id][:stats]]
+      puts "%s (%s). Trip seen %s times" % [trips[id][:trip], trips[id][:when], trips[id][:stats]]
       if trips[id][:who].length == 0
         puts "\t-Empty"
         next
