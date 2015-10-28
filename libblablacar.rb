@@ -520,6 +520,10 @@ class Blablacar
     body = CGI.unescapeHTML(res.body.force_encoding('utf-8').gsub("<br />", ""))
     url = body.scan(/<form id="qa" .* action="(\/messages\/respond\/.*)" method="POST"/).flatten.first
     token = body.scan(/message\[_token\]" value="([^"]*)" \/>/).flatten.first
+    index = body.index('<div class="trip-qa-form"')
+    if not index
+      return nil
+    end
     body = body[0..body.index('<div class="trip-qa-form"')]
     msgs = body.scan(/<div class="msg-comment">\s*<h4>\s*<strong>\s*(.*)\s*<\/strong>\s*<\/h4>\s*<p>([^<]*)<\/p>/).flatten
     hours = body.scan(/\s*<p class="msg-date clearfix">\s*(.*)\s*</).flatten
@@ -567,57 +571,40 @@ class Blablacar
     res = @http.request(message_req)
     if not all
       unread = nil
-      body = ""
-      # marche avec 2 messages non lus ??
-      res.body.force_encoding('utf-8').each_line do |line|
-        if line.include?('<li class="unread">')
-          unread = true
-          next
-        end
-        if line.include?('</li>') and unread
-          break
-        end
-        if unread
-          body << line
-        end
-      end
-      if body.length == 0 # means no unread message
+      index = res.body.force_encoding('utf-8').index(/<li>\s*<a href="\/trajet-/)
+      if not index # means no unread message
         return
       end
-      body = CGI.unescapeHTML(body).force_encoding('utf-8')
+      body = CGI.unescapeHTML(res.body.force_encoding('utf-8')[0..index])
     else
       body = CGI.unescapeHTML(res.body).force_encoding('utf-8')
     end
-    names = body.scan(/span3">\s*<img class="tip" title="([^"]*)" alt="/).flatten
-    trips = body.scan(/<p>Covoiturage de ([^<]*)<\/p/).flatten
-    dates = body.scan(/archiveModal"><\/span>\s*([^\n]*)\s*<\/div>/).flatten
     urls = body.scan(/a href="(\/trajet-[^"]*)"/).flatten
-    if not (names.length == trips.length and trips.length == dates.length)
-      eputs "Some message will me missing"
-    end
     msg = Array.new
-    0.upto(names.length-1).map{|id|
-      puts "[%s] %s, %s" % [dates[id], names[id], trips[id].gsub("à", "->")]
-      msg << [dates[id], names[id], trips[id], urls[id]]
+    urls.map{|u|
+      m = get_conversations(u)
+      if not m
+        next
+      end
+      resp_url = m.map{|c|c[:url]}.uniq.first
+      t = Hash.new
+      t[:url] = resp_url
+      t[:msgs] = m.map{|c|c[:msg]}
+      t[:token] = m.first[:token]
+      msg << t
     }
-    # ex: [{:msg=>"[Aujourd'hui à 09h48] Miguel  L : \"BONJOUR  GREG  vous  arrive jusque  a la  gare pardieu\"", :url=>"/messages/respond/kAxP4rA..."]
-    #urls.map{|u|
-    #  get_conversations(u).map{|m|
-    #  puts "%s (%s)" % [m[:msg], msg[:token]]
-    #  puts "-"*20
-    #  }
-    #}
+    # ex: [{:msg=>["[Aujourd'hui à 09h48] Miguel  L : \"BONJOUR  GREG  vous  arrive jusque  a la  gare pardieu\"", "..."], :url=>"/messages/respond/kAxP4rA...", :token => "XazeAFsdf..."}]
     return msg
   end
 
-  def get_messages
+  def get_new_messages
     get_info_and_link_messages
   end
 
   # TODO ?
-  #def get_all_messages
-  #  get_info_and_link_messages(true)
-  #end
+  def get_all_messages
+    get_info_and_link_messages(true)
+  end
 
   def get_opinion(page=1)
     vputs __method__.to_s

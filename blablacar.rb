@@ -9,7 +9,7 @@ $LOAD_PATH.unshift(File.expand_path(File.dirname(__FILE__)))
 require 'libblablacar'
 
 options = {}
-options[:interactive] = true
+options[:interactive] = "true"
 parser = OptionParser.new do |opts|
   opts.banner = "This is an example about what you can do with libblablacar.rb. Don't hesitate to improve it and let me know about it!"
   opts.banner = "Usage: #$0 <command>=<arg>"
@@ -79,10 +79,11 @@ end
 if options[:message]
   if blabla.messages?
     puts "#{blabla.messages} new message(s)"
-    msgs = blabla.get_messages
+    msgs = blabla.get_new_messages
     msgs.each_with_index{|m, ind|
-      puts "#{ind}) %{msg}" % m
-      puts "#{}"
+      puts "Conversations n°#{ind})"
+      m[:msgs].map{|c| puts "  #{c}"}
+      puts "-"*10
     }
     if options[:interactive].to_boolean != true
       puts "Interactive mode disabled"
@@ -96,6 +97,7 @@ if options[:message]
         if ind == "q" or ind == "quit"
           exit
         end
+        ind = ind.to_i
         if msgs[ind] == nil
           puts "[!] Invalid index"
           next
