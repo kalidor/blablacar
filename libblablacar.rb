@@ -34,7 +34,7 @@ $dashboard = {
 
 $tripoffers = {
   :method => Net::HTTP::Get,
-  :url => "/dashboard/trip-offers/active",
+  :url => "/dashboard/trip-offers/active?page=%s",
 }
 
 $trip = {
@@ -471,17 +471,29 @@ class Blablacar
     res.body.force_encoding('utf-8')
   end
 
+  def trip_offers_parsing(body, ind=0)
+    trips = {}
+    ts = body.scan(/"\/dashboard\/trip-offer\/(\d*)\/passengers" class=/).flatten
+    stats = body.scan(/visit-stats">Annonce vue (\d*) fois/).flatten
+    ts.each_with_index do |v, i|
+      trips[ind + i] = {:trip => v, :stats => stats[i]}
+    end
+    trips
+  end
+
   # Get all trip's offers id
   def get_trip_offers
     vputs __method__.to_s
-    trip_offer_req = setup_http_request($tripoffers, @cookie)
+    trip_offer_req = setup_http_request($tripoffers, @cookie, {:arg => [1]})
     res = @http.request(trip_offer_req)
     trips = {}
-    ts = res.body.scan(/"\/dashboard\/trip-offer\/(\d*)\/passengers" class=/).flatten
-    stats = res.body.scan(/visit-stats">Annonce vue (\d*) fois/).flatten
-    ts.each_with_index do |v, i|
-      trips[i] = {:trip => v, :stats => stats[i]}
-    end
+    trips = trip_offers_parsing(res.body)
+    pages = res.body.scan(/<a href="\/dashboard\/trip-offers\/active\?page=(\d*)/).flatten.uniq
+    pages.map{|p|
+      trip_offer_req = setup_http_request($tripoffers, @cookie, {:arg => [p]})
+      res = @http.request(trip_offer_req)
+      trips = trips.merge(trip_offers_parsing(res.body, trips.length))
+    }
     trips
   end
 
