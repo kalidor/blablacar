@@ -79,11 +79,16 @@ end
 if options[:message]
   if blabla.messages?
     puts "#{blabla.messages} new message(s)"
-    msgs = blabla.get_new_messages
-    msgs.each_with_index{|m, ind|
-      puts "Conversations n°#{ind})"
-      m[:msgs].map{|c| puts "  #{c}"}
-      puts "-"*10
+    all_msgs = blabla.get_new_messages
+    ind = 0
+    all_msgs.maps{|kind, msgs|
+      puts "#{kind.to_s} messages:"
+      msgs.each{|m|
+        puts "Conversations n°#{ind})"
+        m[:msgs].map{|c| puts "  #{c}"}
+        puts "-"*10
+        ind += 1
+      }
     }
     if options[:interactive].to_boolean != true
       puts "Interactive mode disabled"

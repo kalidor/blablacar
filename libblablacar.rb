@@ -1,5 +1,3 @@
-#!/usr/bin/env ruby
-# coding: utf-8
 # Author: Gregory 'kalidor' Charbonneau
 # Email: kalidor -AT- unixed -DOT- fr
 # Published under the terms of the wtfPLv2
@@ -52,6 +50,11 @@ $trip_confirmation = {
 $messages = {
   :method => Net::HTTP::Get,
   :url => "/questions-answers",
+}
+
+$private_messages = {
+  :method => Net::HTTP::Get,
+  :url => "/messages/received",
 }
 
 $respond_to_message = {
@@ -530,13 +533,14 @@ class Blablacar
     messages_req = setup_http_request($messages, @cookie, {:url => url})
     res = @http.request(messages_req)
     body = CGI.unescapeHTML(res.body.force_encoding('utf-8').gsub("<br />", ""))
+    File.open("/tmp/body.html", "w") do |f| f.write(body); end
     url = body.scan(/<form id="qa" .* action="(\/messages\/respond\/.*)" method="POST"/).flatten.first
     token = body.scan(/message\[_token\]" value="([^"]*)" \/>/).flatten.first
-    index = body.index('<div class="trip-qa-form"')
+    index = body.index('Vous aurez accès au numéro de')
     if not index
       return nil
     end
-    body = body[0..body.index('<div class="trip-qa-form"')]
+    body = body[0..index]
     msgs = body.scan(/<div class="msg-comment">\s*<h4>\s*<strong>\s*(.*)\s*<\/strong>\s*<\/h4>\s*<p>([^<]*)<\/p>/).flatten
     hours = body.scan(/\s*<p class="msg-date clearfix">\s*(.*)\s*</).flatten
     msgs = msgs.each_slice(2).map{|top| "#{top.first} #{top.last}".gsub("\r\n", "").gsub('""', '"')}
@@ -576,46 +580,66 @@ class Blablacar
     raise SendReponseMessageFailed, "Cannot received expected 302 code..."
   end
 
-  # Get all *UNREAD* public questions link
-  def get_info_and_link_messages(all=nil)
-    vputs __method__.to_s
-    message_req = setup_http_request($messages, @cookie)
-    res = @http.request(message_req)
+  # body: current HTML code
+  # _private: look for private message
+  # all: look for every messages, not only unread messages
+  def messages_parsing(body, _private=nil, all=nil)
+    term = "/trajet-"
+    term = "\\/messages\\/private" if _private
+    File.open("/tmp/body_#{_private.to_s}_#{rand(0..12)}.html", "w") do |f| f.write body; end
     if not all
       unread = nil
-      index = res.body.force_encoding('utf-8').index(/<li>\s*<a href="\/trajet-/)
-      if not index # means no unread message
-        return
-      end
-      body = CGI.unescapeHTML(res.body.force_encoding('utf-8')[0..index])
+      index = body.index(/<li class="unread">\s*<a href="#{term}/)
+      return nil if not index # means no unread message
+      body = CGI.unescapeHTML(body[0..index+200])
     else
-      body = CGI.unescapeHTML(res.body).force_encoding('utf-8')
+      body = CGI.unescapeHTML(body)
     end
-    urls = body.scan(/a href="(\/trajet-[^"]*)"/).flatten
-    msg = Array.new
-    urls.map{|u|
-      m = get_conversations(u)
-      if not m
-        next
-      end
-      resp_url = m.map{|c|c[:url]}.uniq.first
-      t = Hash.new
-      t[:url] = resp_url
-      t[:msgs] = m.map{|c|c[:msg]}
-      t[:token] = m.first[:token]
-      msg << t
-    }
-    # ex: [{:msg=>["[Aujourd'hui à 09h48] Miguel  L : \"BONJOUR  GREG  vous  arrive jusque  a la  gare pardieu\"", "..."], :url=>"/messages/respond/kAxP4rA...", :token => "XazeAFsdf..."}]
+    urls = body.scan(/<a href="(#{term}[^"]*)"/).flatten
+    urls
+  end
+
+  # Get public/private message link
+  # 
+  def get_messages_link_and_content(all=nil)
+    vputs __method__.to_s
+    urls = {:public => [], :private => []}
+    # public messages
+    message_req = setup_http_request($messages, @cookie)
+    res = @http.request(message_req)
+    urls[:public] = messages_parsing(res.body.force_encoding('utf-8'), nil, all)
+    # private messages
+    message_req = setup_http_request($private_messages, @cookie)
+    res = @http.request(message_req)
+    urls[:private] = messages_parsing(res.body.force_encoding('utf-8'), true, all)
+    msg = {:public => [], :private => []}
+    until urls.empty?
+      k, uu = urls.shift
+      next if uu == nil
+      uu.map{|u|
+        get_conversations(u) do |m|
+          puts "Got conversations....#{m.inspect}"
+          next if not m
+          resp_url = m.map{|c|c[:url]}.uniq.first
+          t = Hash.new
+          t[:url] = resp_url
+          t[:msgs] = m.map{|c|c[:msg]}
+          t[:token] = m.first[:token]
+          msg[k] << t
+        end
+      }
+    end
+    # ex: {:public => [{:msg=>["[Aujourd'hui à 09h48] Miguel  L : \"BONJOUR  GREG  vous  arrive jusque  a la  gare pardieu\"", "..."], :url=>"/messages/respond/kAxP4rA...", :token => "XazeAFsdf..."}], :private => [{:msg => ...}]
     return msg
   end
 
   def get_new_messages
-    get_info_and_link_messages
+    get_messages_link_and_content
   end
 
   # TODO ?
   def get_all_messages
-    get_info_and_link_messages(true)
+    get_messages_link_and_content(true)
   end
 
   def get_opinion(page=1)
