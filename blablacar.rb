@@ -81,11 +81,11 @@ if options[:message]
     puts "#{blabla.messages} new message(s)"
     all_msgs = blabla.get_new_messages
     ind = 0
-    all_msgs.maps{|kind, msgs|
-      puts "#{kind.to_s} messages:"
+    all_msgs.map{|kind, msgs|
+      puts "#{kind.to_s} messages: %s" % ((msgs.length == 0) ? "No messages" : "")
       msgs.each{|m|
         puts "Conversations n°#{ind})"
-        m[:msgs].map{|c| puts "  #{c}"}
+        puts "  #{m[:msg]}"
         puts "-"*10
         ind += 1
       }
@@ -94,7 +94,7 @@ if options[:message]
       puts "Interactive mode disabled"
     else
       while true do
-        puts "('q' for quit, input question num to respond to) Respond to > "
+        print "('q' for quit, input question num to respond to) Respond to > "
         ind = STDIN.readline.chomp!
         if ind == "n" or ind == "next"
           break
@@ -107,7 +107,7 @@ if options[:message]
           puts "[!] Invalid index"
           next
         end
-        puts "Enter message (think to escape '!')> "
+        print "Enter message (think to escape '!')> "
         response = STDIN.readline.chomp!
         if response.empty?
           puts "[!] Empty message"

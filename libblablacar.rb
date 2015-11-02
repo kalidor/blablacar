@@ -474,7 +474,7 @@ class Blablacar
     res.body.force_encoding('utf-8')
   end
 
-  def trip_offers_parsing(body, ind=0)
+  def list_trip_offers(body, ind=0)
     trips = {}
     ts = body.scan(/"\/dashboard\/trip-offer\/(\d*)\/passengers" class=/).flatten
     stats = body.scan(/visit-stats">Annonce vue (\d*) fois/).flatten
@@ -490,14 +490,27 @@ class Blablacar
     trip_offer_req = setup_http_request($tripoffers, @cookie, {:arg => [1]})
     res = @http.request(trip_offer_req)
     trips = {}
-    trips = trip_offers_parsing(res.body)
+    trips = list_trip_offers(res.body)
     pages = res.body.scan(/<a href="\/dashboard\/trip-offers\/active\?page=(\d*)/).flatten.uniq
     pages.map{|p|
       trip_offer_req = setup_http_request($tripoffers, @cookie, {:arg => [p]})
       res = @http.request(trip_offer_req)
-      trips = trips.merge(trip_offers_parsing(res.body, trips.length))
+      trips = trips.merge(list_trip_offers(res.body, trips.length))
     }
     trips
+  end
+
+  def parse_trip(data)
+    res = CGI.unescapeHTML(data.force_encoding('utf-8'))
+    t={}
+    t[:trip] = res.scan(/<h2 class="pull-left">\s(.*)\s*<\/h2>/).flatten.map{|c| c.strip!}.first.gsub("&rarr;", "->")
+    t[:when] = res.scan(/<p class="my-trip-elements size16 push-left no-clear my-trip-date">\s(.*)\s*<\/p>/).flatten.map{|c| c.strip!}.first
+    t[:who] = res.scan(/<a href="\/membre\/profil\/.*" class="blue">\s*(.*)\s*<\/a>/).flatten.map{|c| c.strip!}
+    t[:note] = res.scan(/<span class="bold dark-gray">(.*)<\/span><span class="fade-gray">/).flatten
+    t[:phone] = res.scan(/<span class="mobile*">(.*)<\/span>/).flatten
+    t[:status] = res.scan(/<div class="pull-right bold (?:green|dark-gray) size16 uppercase">(.*)<\/div>/).flatten
+    t[:actual_trip] = res.scan(/<ul class="unstyled passenger-trip size17">\s*<li>\s([a-zA-Zé\ \-]*)\s*<\/li>/).flatten.map{|c| c.strip!}
+    t
   end
 
   # Display all passengers for all the future trips
@@ -513,14 +526,8 @@ class Blablacar
       }
       trip_req = setup_http_request($trip, @cookie, {:arg => [id]})
       res = @http.request(trip_req)
-      res = CGI.unescapeHTML(res.body.force_encoding('utf-8'))
-      trips[id][:trip] = res.scan(/<h2 class="pull-left">\s(.*)\s*<\/h2>/).flatten.map{|c| c.strip!}.first.gsub("&rarr;", "->")
-      trips[id][:when] = res.scan(/<p class="my-trip-elements size16 push-left no-clear my-trip-date">\s(.*)\s*<\/p>/).flatten.map{|c| c.strip!}.first
-      trips[id][:who] = res.scan(/<a href="\/membre\/profil\/.*" class="blue">\s*(.*)\s*<\/a>/).flatten.map{|c| c.strip!}
-      trips[id][:note] = res.scan(/<span class="bold dark-gray">(.*)<\/span><span class="fade-gray">/).flatten
-      trips[id][:phone] = res.scan(/<span class="mobile*">(.*)<\/span>/).flatten
-      trips[id][:status] = res.scan(/<div class="pull-right bold (?:green|dark-gray) size16 uppercase">(.*)<\/div>/).flatten
-      trips[id][:actual_trip] = res.scan(/<ul class="unstyled passenger-trip size17">\s*<li>\s([a-zA-Zé\ \-]*)\s*<\/li>/).flatten.map{|c| c.strip!}
+      p = parse_trip(res.body)
+      trips[id] = p
     }
     # Sort by date
     trips = Hash[trips.sort_by{|k, v| v[:when]}]
@@ -533,32 +540,37 @@ class Blablacar
     messages_req = setup_http_request($messages, @cookie, {:url => url})
     res = @http.request(messages_req)
     body = CGI.unescapeHTML(res.body.force_encoding('utf-8').gsub("<br />", ""))
-    File.open("/tmp/body.html", "w") do |f| f.write(body); end
-    url = body.scan(/<form id="qa" .* action="(\/messages\/respond\/.*)" method="POST"/).flatten.first
-    token = body.scan(/message\[_token\]" value="([^"]*)" \/>/).flatten.first
-    index = body.index('Vous aurez accès au numéro de')
-    if not index
-      return nil
+    lastindex = body.index('Questions sur les autres portions du trajet')
+    if lastindex
+      body = body[0..lastindex]
     end
-    body = body[0..index]
-    msgs = body.scan(/<div class="msg-comment">\s*<h4>\s*<strong>\s*(.*)\s*<\/strong>\s*<\/h4>\s*<p>([^<]*)<\/p>/).flatten
-    hours = body.scan(/\s*<p class="msg-date clearfix">\s*(.*)\s*</).flatten
-    msgs = msgs.each_slice(2).map{|top| "#{top.first} #{top.last}".gsub("\r\n", "").gsub('""', '"')}
+    # looking for uniq value for each discussion (url to respond to)
+    urls = body.scan(/<form id="qa"\s*class="[^"]*"\s*action="(\/messages\/respond\/[^"]*)"\s*method="POST"/).flatten
     ret = Array.new
-    0.upto(msgs.length-1).map{|id|
-      if msgs[id].include?("Greg C")
-      # When I have already responded
-      #  d = "[%s] %s" % [hours[id], msgs[id].split(":").first]
-      #  d.strip!
-      if check
-         m = msgs[id].split(":")[1..-1].join(":")
-        ret << m.strip!
-      end
-      else
-        if not check
-          ret << {:msg => "[%s] %s" % [hours[id], msgs[id]], :url => url, :token => token}
+    u = 0
+    urls.map{|t|
+      ind = body.index(t)+2000
+      body_ = body[u..ind]
+      u = ind
+      token = body_.scan(/message\[_token\]" value="([^"]*)" \/>/).flatten.first
+      users = body_.scan(/<a href="\/membre\/profil\/[^"]*" class="u-(?:darkGray)?(?:blue)?">([^<]*)<\/a>/).flatten
+      msgs = body_.scan(/<\/span><\/span>\)<\/span>\s*<\/h3>\s*<p>([^<]*)<\/p>/).flatten
+      hours = body_.scan(/<time class="Speech-date" datetime="[^"]*">([^<]*)<\/time>/).flatten
+      0.upto(msgs.length-1).map{|id|
+        if users[id].include?("Greg C")
+        # When I have already responded
+        #  d = "[%s] %s" % [hours[id], msgs[id].split(":").first]
+        #  d.strip!
+        if check
+           m = msgs[id].split(":")[1..-1].join(":")
+          ret << m.strip!
         end
-      end
+        else
+          if not check
+            ret << {:msg => "[%s] %s: %s" % [hours[id], users[id], msgs[id].gsub("\r\n", ' ').gsub("\n", " ")], :url => t, :token => token}
+          end
+        end
+      }
     }
     ret
   end
@@ -600,7 +612,7 @@ class Blablacar
   end
 
   # Get public/private message link
-  # 
+  #
   def get_messages_link_and_content(all=nil)
     vputs __method__.to_s
     urls = {:public => [], :private => []}
@@ -617,14 +629,13 @@ class Blablacar
       k, uu = urls.shift
       next if uu == nil
       uu.map{|u|
-        get_conversations(u) do |m|
-          puts "Got conversations....#{m.inspect}"
+        get_conversations(u).map do |m|
           next if not m
-          resp_url = m.map{|c|c[:url]}.uniq.first
+          resp_url = m[:url]
           t = Hash.new
           t[:url] = resp_url
-          t[:msgs] = m.map{|c|c[:msg]}
-          t[:token] = m.first[:token]
+          t[:msg] = m[:msg]
+          t[:token] = m[:token]
           msg[k] << t
         end
       }
