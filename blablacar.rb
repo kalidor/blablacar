@@ -28,7 +28,8 @@ parser = OptionParser.new do |opts|
   opts.on("-s", "--money-status", "Get the money transfer status") do |v| options[:money_status] = v; end
   opts.on("-t", "--transfert-request", "Make money transfert request") do |v| options[:transfer] = v; end
   opts.on("-u", "--user user", "Validate a trip with this guy") do |v| options[:user] = v; end
-  #opts.on("-v", "--[no-]verbose", "Run verbosely") do |v| options[:verbose] = v; end
+  #opts.on("-V", "--[no-]verbose", "Run verbosely") do |v| options[:verbose] = v; end
+  opts.on("-D", "--debug", "For debug (run in proxy 127.0.0.1:8080)") do |v| options[:debug] = v; end
   opts.on_tail("-h", "--help", "Show this help message") do puts opts; exit 0; end
   opts.on_tail("Configuration sample (#{ENV['HOME']}/.blablacar.rc):")
   opts.on_tail("user: <email>")
@@ -63,7 +64,7 @@ end
 
 iputs "Starting: %s" % Time.now.to_s
 
-blabla = Blablacar.new
+blabla = Blablacar.new(options[:verbose], options[:debug])
 blabla.run(options[:configuration])
 
 #blabla.search_trip("Annecy", "Lyon", "30/09/2015")

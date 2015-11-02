@@ -3,6 +3,7 @@
 # Published under the terms of the wtfPLv2
 
 require 'net/http'
+require 'net/https'
 require 'uri'
 require 'cgi' # unescape
 require 'json'
@@ -111,7 +112,7 @@ $rating_received = {
 }
 
 def save_cookie(cookie)
-  vputs __method__.to_s
+  dputs __method__.to_s
   File.open($CONF['cookie'], "w") do |fc|
     fc.write(cookie)
   end
@@ -227,7 +228,7 @@ class ValidationNotification < Notification
   # if return false => wrong validation code
   # if return nil => the post request fails somewhere
   def confirm(code)
-    vputs __method__.to_s
+    dputs __method__.to_s
     get_confirm_req = setup_http_request($dashboard, @cookie, {:url=>@url})
     res = @http.request(get_confirm_req)
     loc = res['location']
@@ -269,7 +270,7 @@ class Virement < Notification
 
   # Get money_ transfer status
   def status?
-    vputs __method__.to_s
+    dputs __method__.to_s
     money_req = setup_http_request($money_transfer_status, @cookie)
     res = @http.request(money_req)
     body = CGI.unescapeHTML(res.body.force_encoding('utf-8').gsub("<br />", ""))
@@ -286,7 +287,7 @@ class Virement < Notification
 
   # Ask for the money transfer on my account
   def transfer
-    vputs __method__.to_s
+    dputs __method__.to_s
     money_req = setup_http_request($money_transfer, @cookie)
     res = @http.request(money_req)
     body = CGI.unescapeHTML(res.body.force_encoding('utf-8').gsub("<br />", ""))
@@ -298,7 +299,7 @@ class Virement < Notification
 
 private
   def total_and_current
-    vputs __method__.to_s
+    dputs __method__.to_s
     money_req = setup_http_request($money, @cookie)
     res = @http.request(money_req)
     body = CGI.unescapeHTML(res.body.force_encoding('utf-8').gsub("<br />", ""))
@@ -363,14 +364,22 @@ end
 
 class Blablacar
   attr_reader :cookie, :messages, :notifications, :virement
-  def initialize
+  def initialize(verbose=nil, debug=nil)
     url = URI.parse("https://www.blablacar.fr/")
-    @http = Net::HTTP.new(url.host, url.port)
-    @http.use_ssl = true
+    if debug
+      proxy = Net::HTTP::Proxy("127.0.0.1", 8080)
+      @http = proxy.start(url.host, url.port, :use_ssl => true,
+                          :verify_mode => OpenSSL::SSL::VERIFY_NONE)
+    else
+      @http = Net::HTTP.new(url.host, url.port)
+      @http.use_ssl = true
+    end
     @cookie = nil
     @messages = 0
     @notifications = []
     @virement = nil
+    $VERBOSE = verbose
+    $DDEBUG = debug
   end
 
   def messages?
@@ -413,7 +422,7 @@ class Blablacar
 
   # (Step1) Get tracking cookie don't know why it's so important
   def get_cookie_tracking
-    vputs __method__.to_s
+    dputs __method__.to_s
     track_req = setup_http_request($tracking, @cookie)
     res = @http.request(track_req)
     get_cookie(res)
@@ -421,7 +430,7 @@ class Blablacar
 
   # (Step2) Post id/passwd to the send_credentials web page
   def send_credentials
-    vputs __method__.to_s
+    dputs __method__.to_s
     $ident[:data] = $ident[:data] % {:user => $CONF['user'], :pass => $CONF['pass']}
     login_req = setup_http_request($ident, @cookie)
     res = @http.request(login_req)
@@ -456,7 +465,7 @@ class Blablacar
     # Step 1: We need cookie tracking :(
     get_cookie_tracking
     (aputs "Can't get Cookie trackin"; exit 1) if not @cookie
-    vputs "Get the cookie tracking: (#@cookie)"
+    dputs "Get the cookie tracking: (#@cookie)"
     # Step 2: Post send_credentials id/passwd and get authenticated cookie
     # the cookie is the same name as previous, but the value is updated
     send_credentials()
@@ -486,7 +495,7 @@ class Blablacar
 
   # Get all trip's offers id
   def get_trip_offers
-    vputs __method__.to_s
+    dputs __method__.to_s
     trip_offer_req = setup_http_request($tripoffers, @cookie, {:arg => [1]})
     res = @http.request(trip_offer_req)
     trips = {}
@@ -515,8 +524,10 @@ class Blablacar
 
   # Display all passengers for all the future trips
   def get_planned_passengers
-    vputs __method__.to_s
+    dputs __method__.to_s
     _trips = get_trip_offers()
+    m="Parsing (on #{_trips.length}): "
+    print m
     trips = {}
     _trips.map{|i, t|
       id = t[:trip]
@@ -524,11 +535,14 @@ class Blablacar
       %w{who phone note actual_trip}.map{|s|
         trips[id][s.to_sym] = ""
       }
+      print i
       trip_req = setup_http_request($trip, @cookie, {:arg => [id]})
       res = @http.request(trip_req)
       p = parse_trip(res.body)
       trips[id] = p
+      print 0x08.chr * i.to_s.length
     }
+    print 0x08.chr * m.length
     # Sort by date
     trips = Hash[trips.sort_by{|k, v| v[:when]}]
     trips
@@ -536,7 +550,7 @@ class Blablacar
 
   # Display message from link
   def get_conversations(url, check=nil)
-    vputs __method__.to_s
+    dputs __method__.to_s
     messages_req = setup_http_request($messages, @cookie, {:url => url})
     res = @http.request(messages_req)
     body = CGI.unescapeHTML(res.body.force_encoding('utf-8').gsub("<br />", ""))
@@ -576,7 +590,7 @@ class Blablacar
   end
 
   def respond_to_question(url, token, resp)
-    vputs __method__.to_s
+    dputs __method__.to_s
     messages_req = setup_http_request($respond_to_message, @cookie, {:url => url, :arg => [resp, token]})
     res = @http.request(messages_req)
     body = CGI.unescapeHTML(res.body.force_encoding('utf-8'))
@@ -614,7 +628,7 @@ class Blablacar
   # Get public/private message link
   #
   def get_messages_link_and_content(all=nil)
-    vputs __method__.to_s
+    dputs __method__.to_s
     urls = {:public => [], :private => []}
     # public messages
     message_req = setup_http_request($messages, @cookie)
@@ -654,7 +668,7 @@ class Blablacar
   end
 
   def get_opinion(page=1)
-    vputs __method__.to_s
+    dputs __method__.to_s
     req = setup_http_request($rating_received, @cookie, {:arg => [page]})
     res = @http.request(req)
     ret = res.body.scan(/<h3 class="Rating-grade Rating-grade--\d">(.*)<\/h3>\s*<p class="Rating-text"><strong>(.*): <\/strong>(.*)<\/p>\s*<\/div>\s*<footer class="Speech-info">\s*<time class="Speech-date" datetime="[^"]*">(.*)<\/time>/)
@@ -663,7 +677,7 @@ class Blablacar
   end
 
   def search_trip(city_start, city_end, date)
-    vputs __method__.to_s
+    dputs __method__.to_s
     req = setup_http_request($search_req, @cookie, {:arg => [city_start, city_end, date]})
     res = @http.request(req)
     res=JSON.parse(res.body)['html']['results'].force_encoding('utf-8')
@@ -695,7 +709,7 @@ class Blablacar
   end
 
   def parse_dashboard(data)
-    vputs __method__.to_s
+    dputs __method__.to_s
     # Don't need to parse the all page...
     msg = data[0..35000].scan(/"\/messages\/received" rel="nofollow">\s*<span class="badge-notification">(\d+)<\/span>\s*<span class="visually-hidden">[^<]*<\/span>/).flatten.first
     tmp = data[0..35000].scan(/class="text-notification-container">\s*<p>\s*(.*)\s*<\/p>\s*<\/div>\s*<div class="btn-notification-container">\s*<a href="(\/dashboard\/notifications\/.*)" class="btn-validation">\s*.*\s*<\/a>/).map{|c| c if not c[1].include?("virement")}.delete_if{|c| c==nil}.map{|c| [c[0],c[1]]}
@@ -729,7 +743,7 @@ class Blablacar
     load_conf(conf)
     check_conf()
     if local_cookie?
-      vputs "Using existing cookie"
+      dputs "Using existing cookie"
       @cookie = File.read($CONF['cookie'])
     else
       authentication()
