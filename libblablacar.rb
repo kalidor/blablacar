@@ -566,6 +566,7 @@ class Blablacar
     end
     # looking for uniq value for each discussion (url to respond to)
     urls = body.scan(/<form id="qa"\s*class="[^"]*"\s*action="(\/messages\/respond\/[^"]*)"\s*method="POST"/).flatten
+    trip_date = body.scan(/<strong class="RideDetails-infoValue">\s*<i class="bbc-icon2-calendar" aria-hidden="true"><\/i>\s*<span>\s*(.*)\s*<\/span>\s*<\/strong>/).flatten.first
     ret = Array.new
     u = 0
     urls.map{|t|
@@ -575,22 +576,29 @@ class Blablacar
       token = body_.scan(/message\[_token\]" value="([^"]*)" \/>/).flatten.first
       users = body_.scan(/<a href="\/membre\/profil\/[^"]*" class="u-(?:darkGray)?(?:blue)?">([^<]*)<\/a>/).flatten
       msgs = body_.scan(/<\/span><\/span>\)<\/span>\s*<\/h3>\s*<p>([^<]*)<\/p>/).flatten
-      hours = body_.scan(/<time class="Speech-date" datetime="[^"]*">([^<]*)<\/time>/).flatten
+      msg_hours = body_.scan(/<time class="Speech-date" datetime="[^"]*">([^<]*)<\/time>/).flatten
+      trips = body_.scan(/<span class="Ridename RideName--small">\(<span class="RideName-mainTrip"><span class="RideName-location RideName-location--arrowAfter">(.*)<\/span><span class="RideName-location">(.*)<\/span><\/span>\)/).flatten
+      trip = (0..trips.length-1).step(2).map{|c| "#{trips[c]}->#{trips[c+1]}"}.first
+      tmp = {:msg_user => users.first, :url => t, :token => token, :trip_date => trip_date, :trip => trip}
+      tmp[:msgs] = []
       0.upto(msgs.length-1).map{|id|
         if users[id].include?("Greg C")
-        # When I have already responded
-        #  d = "[%s] %s" % [hours[id], msgs[id].split(":").first]
-        #  d.strip!
-        if check
-           m = msgs[id].split(":")[1..-1].join(":")
-          ret << m.strip!
-        end
+          # When I have already responded
+          #  d = "[%s] %s" % [msg_hours[id], msgs[id].split(":").first]
+          #  d.strip!
+          if check
+             m = msgs[id].split(":")[1..-1].join(":")
+            ret << m.strip!
+          end
         else
           if not check
-            ret << {:msg => "[%s] %s: %s" % [hours[id], users[id], msgs[id].gsub("\r\n", ' ').gsub("\n", " ")], :url => t, :token => token}
+            #ret << {:msg_user => users[id], :msg => {:msg_date => msg_hours[id], :msg => msgs[id].gsub("\r\n", ' ').gsub("\n", " "), :trip => trip, :trip_date => trip_date, :url => t, :token => token}
+            next if msgs[id] == nil
+            tmp[:msgs] << {:msg_date => msg_hours[id], :msg => msgs[id].gsub("\r\n", ' ').gsub("\n", " ")}
           end
         end
       }
+      ret << tmp
     }
     ret
   end
@@ -622,7 +630,7 @@ class Blablacar
     if not all
       unread = nil
       index = body.index(/<li class="unread">\s*<a href="#{term}/)
-      return nil if not index # means no unread message
+      return [] if not index # means no unread message
       body = CGI.unescapeHTML(body[0..index+200])
     else
       body = CGI.unescapeHTML(body)
@@ -640,6 +648,7 @@ class Blablacar
     message_req = setup_http_request($messages, @cookie)
     res = @http.request(message_req)
     urls[:public] = messages_parsing(res.body.force_encoding('utf-8'), nil, all)
+    urls[:public] << "/trajet-annecy-bron-304405576"
     # private messages
     message_req = setup_http_request($private_messages, @cookie)
     res = @http.request(message_req)
@@ -651,12 +660,7 @@ class Blablacar
       uu.map{|u|
         get_conversations(u).map do |m|
           next if not m
-          resp_url = m[:url]
-          t = Hash.new
-          t[:url] = resp_url
-          t[:msg] = m[:msg]
-          t[:token] = m[:token]
-          msg[k] << t
+          msg[k] << m
         end
       }
     end

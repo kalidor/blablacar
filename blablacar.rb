@@ -81,14 +81,17 @@ if options[:message]
   if blabla.messages?
     puts "#{blabla.messages} new message(s)"
     all_msgs = blabla.get_new_messages
-    ind = 0
+    cpt = 0
     all_msgs.map{|kind, msgs|
       puts "#{kind.to_s} messages: %s" % ((msgs.length == 0) ? "No messages" : "")
       msgs.each{|m|
-        puts "Conversations n°#{ind})"
-        puts "  #{m[:msg]}"
+        puts "#{cpt}) #{m[:trip]} (#{m[:trip_date]})"
+        puts "  User: #{m[:msg_user]}:"
+        m[:msgs].map{|mm|
+          puts "  · #{mm[:msg_date].capitalize}: #{mm[:msg]}"
+        }
         puts "-"*10
-        ind += 1
+        cpt += 1
       }
     }
     if options[:interactive].to_boolean != true
@@ -104,7 +107,14 @@ if options[:message]
           exit
         end
         ind = ind.to_i
-        if msgs[ind] == nil
+        found = false
+        all_msgs.map{|k,v|
+          if v[ind] != nil
+            found = v[ind]
+            break
+          end
+        }
+        if not found
           puts "[!] Invalid index"
           next
         end
@@ -114,7 +124,7 @@ if options[:message]
           puts "[!] Empty message"
           next
         end
-        if blabla.respond_to_question(msgs[ind][:url], msgs[ind][:token], response)
+        if blabla.respond_to_question(found[:url], found[:token], response)
           puts "Message sent"
           break
         end
