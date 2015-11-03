@@ -517,7 +517,7 @@ class Blablacar
     t[:who] = res.scan(/<a href="\/membre\/profil\/.*" class="blue">\s*(.*)\s*<\/a>/).flatten.map{|c| c.strip!}
     t[:note] = res.scan(/<span class="bold dark-gray">(.*)<\/span><span class="fade-gray">/).flatten
     t[:phone] = res.scan(/<span class="mobile*">(.*)<\/span>/).flatten
-    t[:place] = res.scan(/<li class="passenger-seat">(\d place[s]?)<\/li>/).flatten
+    t[:place] = res.scan(/<li class="passenger-seat">(\d) place[s]?<\/li>/).flatten
     t[:status] = res.scan(/<div class="pull-right bold (?:green|dark-gray) size16 uppercase">(.*)<\/div>/).flatten
     t[:actual_trip] = res.scan(/<ul class="unstyled passenger-trip size17">\s*<li>\s([a-zA-Zé\ \-]*)\s*<\/li>/).flatten.map{|c| c.strip!}
 
