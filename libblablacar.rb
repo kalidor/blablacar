@@ -540,15 +540,12 @@ class Blablacar
     trips = {}
     _trips.map{|i, t|
       id = t[:trip]
-      trips[id] = {:stats => t[:stats]}
-      %w{who phone note actual_trip}.map{|s|
-        trips[id][s.to_sym] = ""
-      }
       print i
       trip_req = setup_http_request($trip, @cookie, {:arg => [id]})
       res = @http.request(trip_req)
       p = parse_trip(res.body)
       trips[id] = p
+      trips[id][:stats] = t[:stats]
       print 0x08.chr * i.to_s.length
     }
     print 0x08.chr * m.length
