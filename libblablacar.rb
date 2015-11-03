@@ -486,7 +486,7 @@ class Blablacar
   def list_trip_offers(body, ind=0)
     trips = {}
     ts = body.scan(/"\/dashboard\/trip-offer\/(\d*)\/passengers" class=/).flatten
-    stats = body.scan(/visit-stats">Annonce vue (\d*) fois/).flatten
+    stats = body.scan(/visit-stats">Annonce vue (\d+) fois<\/span>/).flatten
     ts.each_with_index do |v, i|
       trips[ind + i] = {:trip => v, :stats => stats[i]}
     end
@@ -517,8 +517,17 @@ class Blablacar
     t[:who] = res.scan(/<a href="\/membre\/profil\/.*" class="blue">\s*(.*)\s*<\/a>/).flatten.map{|c| c.strip!}
     t[:note] = res.scan(/<span class="bold dark-gray">(.*)<\/span><span class="fade-gray">/).flatten
     t[:phone] = res.scan(/<span class="mobile*">(.*)<\/span>/).flatten
+    t[:place] = res.scan(/<li class="passenger-seat">(\d place[s]?)<\/li>/).flatten
     t[:status] = res.scan(/<div class="pull-right bold (?:green|dark-gray) size16 uppercase">(.*)<\/div>/).flatten
     t[:actual_trip] = res.scan(/<ul class="unstyled passenger-trip size17">\s*<li>\s([a-zA-Zé\ \-]*)\s*<\/li>/).flatten.map{|c| c.strip!}
+
+    # Insert blanck phone number
+    tmp = t[:status].dup
+    1.upto(t[:status].count("annulée")).map do |x|
+      i = tmp.find_index("annulée")
+      tmp = t[:status][i+1..-1].dup
+      t[:phone].insert(i, nil)
+    end
     t
   end
 
