@@ -277,7 +277,7 @@ class Virement < Notification
     m = {}
     m[:who] = body.scan(/<li>([^<]*)<\/li>/).flatten
     m[:trip] = body.scan(/(.* &rarr; .*)<br\/>/).flatten.map{|c| c.gsub('&rarr;', '->').strip!}
-    m[:status] = body.scan(/<td class="vertical-middle align-center .* span3" headers="status axe-1">\s*(.*)\s*/).flatten.map{|c| c.gsub('<br/>','')}
+    m[:status] = body.scan(/<td class="vertical-middle align-center .* span3">\s*(.*)\s*/).flatten.map{|c| c.gsub('<br/>','')}
     data = []
     0.step(m[:who].length-1,3) do |i|
       data << [m[:who][i], m[:who][i+1], m[:trip][i/3], m[:status][i/3]]
