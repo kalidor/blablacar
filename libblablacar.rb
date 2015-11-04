@@ -648,7 +648,6 @@ class Blablacar
     message_req = setup_http_request($messages, @cookie)
     res = @http.request(message_req)
     urls[:public] = messages_parsing(res.body.force_encoding('utf-8'), nil, all)
-    urls[:public] << "/trajet-annecy-bron-304405576"
     # private messages
     message_req = setup_http_request($private_messages, @cookie)
     res = @http.request(message_req)
