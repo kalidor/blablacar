@@ -610,8 +610,10 @@ class Blablacar
     body = CGI.unescapeHTML(res.body.force_encoding('utf-8'))
     # Checking...
     if res.code == "302"
+      found = false
       get_conversations(res['location']).map{|m|
-        if m.include?(resp)
+        m[:msgs].map{|c| found = true if c[:msg].include?(resp)}
+        if found
           return true
         end
       }
@@ -719,10 +721,10 @@ class Blablacar
 
   def parse_dashboard(data)
     dputs __method__.to_s
-    # Don't need to parse the all page...
+    # Don't need to parse the all page to get message received...
     msg = data[0..35000].scan(/"\/messages\/received" rel="nofollow">\s*<span class="badge-notification">(\d+)<\/span>\s*<span class="visually-hidden">[^<]*<\/span>/).flatten.first
-    tmp = data[0..35000].scan(/class="text-notification-container">\s*<p>\s*(.*)\s*<\/p>\s*<\/div>\s*<div class="btn-notification-container">\s*<a href="(\/dashboard\/notifications\/.*)" class="btn-validation">\s*.*\s*<\/a>/).map{|c| c if not c[1].include?("virement")}.delete_if{|c| c==nil}.map{|c| [c[0],c[1]]}
-    tmp.map{|t|
+    tmp = data.scan(/class="text-notification-container">\s*<p>\s*(.*)\s*<\/p>\s*<\/div>\s*<div class="btn-notification-container">\s*<a href="(\/dashboard\/notifications\/.*)" class="btn-validation">\s*.*\s*<\/a>/).map{|c| c if not c[1].include?("virement")}.delete_if{|c| c==nil}.map{|c| [c[0],c[1]]}
+    mp.map{|t|
       ret = parse_notifications(t)
       @notifications << ret if ret
     }
