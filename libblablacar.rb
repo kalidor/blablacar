@@ -724,7 +724,7 @@ class Blablacar
     # Don't need to parse the all page to get message received...
     msg = data[0..35000].scan(/"\/messages\/received" rel="nofollow">\s*<span class="badge-notification">(\d+)<\/span>\s*<span class="visually-hidden">[^<]*<\/span>/).flatten.first
     tmp = data.scan(/class="text-notification-container">\s*<p>\s*(.*)\s*<\/p>\s*<\/div>\s*<div class="btn-notification-container">\s*<a href="(\/dashboard\/notifications\/.*)" class="btn-validation">\s*.*\s*<\/a>/).map{|c| c if not c[1].include?("virement")}.delete_if{|c| c==nil}.map{|c| [c[0],c[1]]}
-    mp.map{|t|
+    tmp.map{|t|
       ret = parse_notifications(t)
       @notifications << ret if ret
     }
