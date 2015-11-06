@@ -62,10 +62,16 @@ class String
   end
 end
 
-iputs "Starting: %s" % Time.now.to_s
+vputs "Starting: %s" % Time.now.to_s
 
 blabla = Blablacar.new(options[:verbose], options[:debug])
 blabla.run(options[:configuration])
+if not blabla.authenticated?
+  puts "[!] Authentication failed"
+  exit 0
+end
+puts "[+] Authenticated"
+blabla.parse_dashboard()
 
 #blabla.search_trip("Annecy", "Lyon", "30/09/2015")
 

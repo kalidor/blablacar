@@ -380,6 +380,12 @@ class Blablacar
     @virement = nil
     $VERBOSE = verbose
     $DDEBUG = debug
+    @authenticated = nil
+    @dashboard = nil
+  end
+
+  def authenticated?
+    @authenticated
   end
 
   def messages?
@@ -719,11 +725,11 @@ class Blablacar
     results
   end
 
-  def parse_dashboard(data)
+  def parse_dashboard
     dputs __method__.to_s
     # Don't need to parse the all page to get message received...
-    msg = data[0..35000].scan(/"\/messages\/received" rel="nofollow">\s*<span class="badge-notification">(\d+)<\/span>\s*<span class="visually-hidden">[^<]*<\/span>/).flatten.first
-    tmp = data.scan(/class="text-notification-container">\s*<p>\s*(.*)\s*<\/p>\s*<\/div>\s*<div class="btn-notification-container">\s*<a href="(\/dashboard\/notifications\/.*)" class="btn-validation">\s*.*\s*<\/a>/).map{|c| c if not c[1].include?("virement")}.delete_if{|c| c==nil}.map{|c| [c[0],c[1]]}
+    msg = @dashboard[0..35000].scan(/"\/messages\/received" rel="nofollow">\s*<span class="badge-notification">(\d+)<\/span>\s*<span class="visually-hidden">[^<]*<\/span>/).flatten.first
+    tmp = @dashboard.scan(/class="text-notification-container">\s*<p>\s*(.*)\s*<\/p>\s*<\/div>\s*<div class="btn-notification-container">\s*<a href="(\/dashboard\/notifications\/.*)" class="btn-validation">\s*.*\s*<\/a>/).map{|c| c if not c[1].include?("virement")}.delete_if{|c| c==nil}.map{|c| [c[0],c[1]]}
     tmp.map{|t|
       ret = parse_notifications(t)
       @notifications << ret if ret
@@ -760,9 +766,9 @@ class Blablacar
       authentication()
     end
 
-    data = nil
+    @dashboard = nil
     begin
-      data = get_dashboard
+      @dashboard = get_dashboard
       save_cookie(@cookie)
     rescue AuthenticationFailed
       iputs "Cookie no more valid. Get a new one"
@@ -770,7 +776,6 @@ class Blablacar
       authentication()
       retry
     end
-    iputs "Authenticated!"
-    parse_dashboard(data)
+    @authenticated = true
   end
 end
