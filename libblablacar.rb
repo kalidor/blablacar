@@ -470,7 +470,7 @@ class Blablacar
   def authentication
     # Step 1: We need cookie tracking :(
     get_cookie_tracking
-    (aputs "Can't get Cookie trackin"; exit 1) if not @cookie
+    (aputs "Can't get Cookie tracking"; exit 1) if not @cookie
     dputs "Get the cookie tracking: (#@cookie)"
     # Step 2: Post send_credentials id/passwd and get authenticated cookie
     # the cookie is the same name as previous, but the value is updated
@@ -760,7 +760,7 @@ class Blablacar
     load_conf(conf)
     check_conf()
     if local_cookie?
-      dputs "Using existing cookie"
+      vputs "Using existing cookie"
       @cookie = File.read($CONF['cookie'])
     else
       authentication()
@@ -771,7 +771,7 @@ class Blablacar
       @dashboard = get_dashboard
       save_cookie(@cookie)
     rescue AuthenticationFailed
-      iputs "Cookie no more valid. Get a new one"
+      vputs "Cookie no more valid. Get a new one"
       @cookie = nil
       authentication()
       retry
