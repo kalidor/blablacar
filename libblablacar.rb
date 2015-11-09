@@ -412,8 +412,7 @@ class Blablacar
   end
 
   def messages?
-    return true if @messages > 0
-    return false
+    return @messages
   end
 
   def notifications?
