@@ -8,10 +8,12 @@ require 'uri'
 require 'cgi' # unescape
 require 'json'
 require 'yaml'
+require 'time'
 $LOAD_PATH.unshift(File.expand_path(File.dirname(__FILE__)))
 require 'helpers'
-
 $CONF = nil
+DAYS = {"Monday" => "Lundi", "Tuesday" => "Mardi", "Wednesday" => "Mercredi", "Thursday" => "Jeudi", "Friday" => "Vendredi", "Saturday" => "Samedi", "Sunday" => "Dimanche"}
+
 
 $tracking = {
   :method => Net::HTTP::Post,
@@ -123,6 +125,27 @@ def local_cookie?
     return true
   end
   false
+end
+
+def look_for_day(day)
+  diff = DAYS.keys.index(DAYS.find{|k,v| v==day}.first) - DAYS.keys.index(Time.now.strftime("%A"))
+end
+
+def parse_time(tt)
+  case tt
+    when /Aujourd'hui\s*à.*/
+      t = Time.parse(tt)
+    when /Demain\s*à.*/
+      t = Time.parse(tt)+60*60*24
+    when /(?:Lundi)?(?:Mardi)?(?:Mercredi)?(?:Jeudi)?(?:Vendredi)?(?:Samedi)?(?:Dimanche)?\s*à.*/
+      diff = look_for_day(tt.split(" ").first)
+      t = Time.parse(tt)+60*60*diff*24
+    when /(?:Lundi)?(?:Mardi)?(?:Mercredi)?(?:Jeudi)?(?:Vendredi)?(?:Samedi)?(?:Dimanche)?\s*\d{1,2}\s*.*\s*à.*/
+      t = Time.parse(tt)
+    else
+      t = Time.parse(tt)
+  end
+  return t
 end
 
 # Set up the HTTP request object to avoir duplicated code
@@ -519,13 +542,13 @@ class Blablacar
     res = CGI.unescapeHTML(data.force_encoding('utf-8'))
     t={}
     t[:trip] = res.scan(/<h2 class="pull-left">\s(.*)\s*<\/h2>/).flatten.map{|c| c.strip!}.first.gsub("&rarr;", "->")
-    t[:when] = res.scan(/<p class="my-trip-elements size16 push-left no-clear my-trip-date">\s(.*)\s*<\/p>/).flatten.map{|c| c.strip!}.first
+    t[:when] = parse_time(res.scan(/<p class="my-trip-elements size16 push-left no-clear my-trip-date">\s(.*)\s*<\/p>/).flatten.map{|c| c.strip!}.first)
     t[:who] = res.scan(/<a href="\/membre\/profil\/.*" class="blue">\s*(.*)\s*<\/a>/).flatten.map{|c| c.strip!}
     t[:note] = res.scan(/<span class="bold dark-gray">(.*)<\/span><span class="fade-gray">/).flatten
     t[:phone] = res.scan(/<span class="mobile*">(.*)<\/span>/).flatten
     t[:place] = res.scan(/<li class="passenger-seat">(\d) place[s]?<\/li>/).flatten
     t[:status] = res.scan(/<div class="pull-right bold (?:green|dark-gray) size16 uppercase">(.*)<\/div>/).flatten
-    t[:actual_trip] = res.scan(/<ul class="unstyled passenger-trip size17">\s*<li>\s([a-zA-Zé\ \-]*)\s*<\/li>/).flatten.map{|c| c.strip!}
+    t[:actual_trip] = res.scan(/<ul class="unstyled passenger-trip size17">\s*<li>\s([a-zA-Zé\ \-]*)\s*<\/li>/).flatten.map{|c| c.strip!;c.gsub!(" - ", " -> ")}
 
     # Insert blanck phone number
     tmp = t[:status].dup
