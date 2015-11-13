@@ -582,8 +582,51 @@ class Blablacar
     trips
   end
 
-  # Display message from link
-  def get_conversations(url, check=nil)
+  # Get private messages from link
+  def get_private_conversations(url, check=nil)
+    dputs __method__.to_s
+    messages_req = setup_http_request($messages, @cookie, {:url => url})
+    res = @http.request(messages_req)
+    body = CGI.unescapeHTML(res.body.force_encoding('utf-8').gsub("<br />", ""))
+    urls = body.scan(/<form id="qa"\s*class="[^"]*"\s*action="(\/messages\/respond\/[^"]*)"\s*method="POST"/).flatten
+    trip = body.scan(/<a href="\/trajet-[^"]*" rel="nofollow">\s*(.*)\s*<\/a>/).flatten.first # PRIVATE
+    trip, trip_date = trip.split(",") # PRIVATE
+    ret = Array.new
+    u = 0
+    urls.map{|t|
+      ind = body.index(t)+2000
+      body_ = body[u..ind]
+      u = ind
+      token = body_.scan(/message\[_token\]" value="([^"]*)" \/>/).flatten.first
+      users = body_.scan(/<h4>\s*<strong>\s*([^:]*) :\s*<\/strong>\s*<\/h4>/).flatten # PRIVATE
+      msgs = body_.scan(/<\/h4>\s*<p>"([^"]*)"<\/p>/).flatten # PRIVATE
+      msg_hours = body_.scan(/<p class="msg-date clearfix">\s*([^<]*)\s*</).flatten.map{|m| m.strip.chomp} # PRIVATE
+      tmp = {:msg_user => users.first, :url => t, :token => token, :trip_date => trip_date, :trip => trip}
+      tmp[:msgs] = []
+      0.upto(msgs.length-1).map{|id|
+        if users[id].include?("Greg C")
+          # When I have already responded
+          #  d = "[%s] %s" % [msg_hours[id], msgs[id].split(":").first]
+          #  d.strip!
+          if check
+             m = msgs[id].split(":")[1..-1].join(":")
+            ret << m.strip!
+          end
+        else
+          if not check
+            #ret << {:msg_user => users[id], :msg => {:msg_date => msg_hours[id], :msg => msgs[id].gsub("\r\n", ' ').gsub("\n", " "), :trip => trip, :trip_date => trip_date, :url => t, :token => token}
+            next if msgs[id] == nil
+            tmp[:msgs] << {:msg_date => msg_hours[id], :msg => msgs[id].gsub("\r\n", ' ').gsub("\n", " ")}
+          end
+        end
+      }
+      ret << tmp
+    }
+    ret
+  end
+
+  # Get public messages from link
+  def get_public_conversations(url, check=nil)
     dputs __method__.to_s
     messages_req = setup_http_request($messages, @cookie, {:url => url})
     res = @http.request(messages_req)
@@ -639,7 +682,8 @@ class Blablacar
     # Checking...
     if res.code == "302"
       found = false
-      get_conversations(res['location']).map{|m|
+      # Should not be a problem calling public instead private or other way
+      get_public_conversations(res['location']).map{|m|
         m[:msgs].map{|c| found = true if c[:msg].include?(resp)}
         if found
           return true
@@ -682,19 +726,21 @@ class Blablacar
     message_req = setup_http_request($private_messages, @cookie)
     res = @http.request(message_req)
     urls[:private] = messages_parsing(res.body.force_encoding('utf-8'), true, all)
-    msg = {:public => [], :private => []}
+    msgs = {:public => [], :private => []}
     until urls.empty?
       k, uu = urls.shift
       next if uu == nil
+      # Set get_public_conversations / get_private_conversations dynamically
+      f = self.method("get_#{k.to_s}_conversations")
       uu.map{|u|
-        get_conversations(u).map do |m|
+        f.call(u).map do |m|
           next if not m
-          msg[k] << m
+          msgs[k] << m
         end
       }
     end
     # ex: {:public => [{:msg=>["[Aujourd'hui à 09h48] Miguel  L : \"BONJOUR  GREG  vous  arrive jusque  a la  gare pardieu\"", "..."], :url=>"/messages/respond/kAxP4rA...", :token => "XazeAFsdf..."}], :private => [{:msg => ...}]
-    return msg
+    return msgs
   end
 
   def get_new_messages
