@@ -239,7 +239,9 @@ if options[:list]
   else
     puts "See planned_passengers:"
     trips.keys.map{|id|
-      puts "%s (%s). Trip seen %s times" % [trips[id][:trip], trips[id][:when].strftime("%A %D à %R"), trips[id][:stats]]
+      t = trips[id][:when].strftime("%A %D à %R")
+      d = t.gsub(t.split(" ").first, DAYS[t.split(" ").first])
+      puts "%s (%s). Trip seen %s times" % [trips[id][:trip], d, trips[id][:stats]]
       if trips[id][:who].length == 0
         puts "\t-Empty"
         next
