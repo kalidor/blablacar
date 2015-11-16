@@ -129,6 +129,7 @@ end
 
 def look_for_day(day)
   diff = DAYS.keys.index(DAYS.find{|k,v| v==day}.first) - DAYS.keys.index(Time.now.strftime("%A"))
+  return diff.abs
 end
 
 def parse_time(tt)
@@ -139,7 +140,7 @@ def parse_time(tt)
       t = Time.parse(tt)+60*60*24
     when /(?:Lundi)?(?:Mardi)?(?:Mercredi)?(?:Jeudi)?(?:Vendredi)?(?:Samedi)?(?:Dimanche)?\s*à.*/
       diff = look_for_day(tt.split(" ").first)
-      t = Time.parse(tt)+60*60*diff*24
+      t = Time.parse(tt)
     when /(?:Lundi)?(?:Mardi)?(?:Mercredi)?(?:Jeudi)?(?:Vendredi)?(?:Samedi)?(?:Dimanche)?\s*\d{1,2}\s*.*\s*à.*/
       t = Time.parse(tt)
     else
