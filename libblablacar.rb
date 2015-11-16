@@ -207,6 +207,9 @@ end
 class SendReponseMessageFailed < StandardError
 end
 
+class AcceptationError < StandardError
+end
+
 # Generic Notification class
 # All notification will heritated from it
 class Notification
@@ -220,6 +223,46 @@ class Notification
   end
 end
 
+# AcceptationNotification
+# When you have to accept a passenger for a trip
+class AcceptationNotification < Notification
+  attr_reader :user, :end_date
+  def prepare(data)
+    @user = data.first.scan(/Vous avez une demande de réservation de (.*) pour votre trajet/).flatten.first
+    parse()
+  end
+  def parse
+    get_req = setup_http_request($dashboard, @cookie,{:url=>@url})
+    res = @http.request(get_req)
+    # res.code == 302
+    next_ = res['location']
+    get_form_confirm_req = setup_http_request($dashboard, @cookie,{:url=>next_})
+    res = @http.request(get_form_confirm_req)
+    @refuse, @accept = res.body.scan(/data-url="(\/seat-driver-action.*)"/).flatten
+    @end_date = res.body.scan(/strong data-date="([^"]*)"/).flatten.first
+    @trip = res.body.scan(/<h2 class="pull-left">\s(.*)\s*<\/h2>/).flatten.first
+    @trip_date = res.body.scan(/<p class="my-trip-elements size16 push-left no-clear my-trip-date">\s*(.*)\s*<\/p>/).flatten.first
+  end
+
+  def accept(user, date)
+    if @user != user
+      raise AcceptationError, "User unknown", caller
+    end
+    if @trip_date != date
+      raise AcceptationError, "Date doesn't match", caller
+    end
+    accept_req = setup_http_request($dashboard, @cookie,{:url=>@accept})
+    res = @http.request(accept_req)
+    if res.code.to_i == 302
+      r = res['location'].match(/\/dashboard\/trip-offer\/\d+\/passengers/)
+      if r.length == 1 # success
+        return true
+      end
+    end
+    return false
+  end
+end
+
 # ValidationNotification
 # When you have to confirm the trip with this person
 class ValidationNotification < Notification
@@ -227,6 +270,7 @@ class ValidationNotification < Notification
   def prepare(data)
     @user = data.first.scan(/renseignez le code passager de (.*) pour recevoir/).flatten.first
   end
+
   def find_user_need_confirm(data)
     m = data.scan(/Vous avez voyag/)
     while t = m.shift do
@@ -798,7 +842,7 @@ class Blablacar
     dputs __method__.to_s
     # Don't need to parse the all page to get message received...
     msg = @dashboard[0..35000].scan(/"\/messages\/received" rel="nofollow">\s*<span class="badge-notification">(\d+)<\/span>\s*<span class="visually-hidden">[^<]*<\/span>/).flatten.first
-    tmp = @dashboard.scan(/class="text-notification-container">\s*<p>\s*(.*)\s*<\/p>\s*<\/div>\s*<div class="btn-notification-container">\s*<a href="(\/dashboard\/notifications\/.*)" class="btn-validation">\s*.*\s*<\/a>/).map{|c| c if not c[1].include?("virement")}.delete_if{|c| c==nil}.map{|c| [c[0],c[1]]}
+    tmp =@dashboard.scan(/class="text-notification-container">\s*<p>\s*(?:<strong>)?(.*)(?:<\/strong>\s*<br\/>)?\s*.*\s*<\/p>\s*<\/div>\s*<div class="btn-notification-container">\s*<a href="(\/dashboard\/notifications\/.*)" class="btn-validation">\s*.*\s*<\/a>/).map{|c| c if not c[1].include?("virement")}.delete_if{|c| c==nil}.map{|c| [c[0],c[1]]}
     tmp.map{|t|
       ret = parse_notifications(t)
       @notifications << ret if ret
@@ -820,6 +864,9 @@ class Blablacar
     end
     if data.first.include?("argent disponible")
       return nil
+    end
+    if data.first.include?("Demande de réservation de")
+      return AcceptationNotification.new(@http, @cookie, data)
     end
   end
 
