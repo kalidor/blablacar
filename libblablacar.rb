@@ -12,8 +12,30 @@ require 'time'
 $LOAD_PATH.unshift(File.expand_path(File.dirname(__FILE__)))
 require 'helpers'
 $CONF = nil
-DAYS = {"Monday" => "Lundi", "Tuesday" => "Mardi", "Wednesday" => "Mercredi", "Thursday" => "Jeudi", "Friday" => "Vendredi", "Saturday" => "Samedi", "Sunday" => "Dimanche"}
-
+DAYS = {
+  "Monday" => "Lundi",
+  "Tuesday" => "Mardi",
+  "Wednesday" => "Mercredi",
+  "Thursday" => "Jeudi",
+  "Friday" => "Vendredi",
+  "Saturday" => "Samedi",
+  "Sunday" => "Dimanche"
+}
+REASON_REFUSE = {
+  "refuse_no_longer_do_trip"=>
+  "J'ai un imprévu, je n'effectue plus le voyage",
+  "refuse_other"=>"Autre",
+  "refuse_wanted_to_ask_question"=>
+    "J'ai besoin de poser une question à ce membre avant d'accepter",
+  "refuse_would_feel_uncomfortable"=>
+    "Je ne me sentirais pas à l'aise en voyageant avec ce membre (ex: pas d'avis sur le profil)",
+  "refuse_psgr_booked_too_short_distance"=>
+    "Ce passager veut réserver pour une distance trop courte",
+  "refuse_trip_full"=>"Mon trajet est complet",
+  "refuse_modify_tripoffer"=>"Je dois modifier l'annonce",
+  "refuse_psgr_profile_incomplete"=>
+    "Le profil de ce membre est incomplet (pas de photo, mini bio, etc.)"
+}
 
 $tracking = {
   :method => Net::HTTP::Post,
@@ -111,6 +133,12 @@ $avis_req_post_confirm = {
 $rating_received = {
   :method => Net::HTTP::Get,
   :url => "/dashboard/ratings/received?page=%s",
+}
+$refuse_req = {
+  :method => Net::HTTP::Post,
+  :url => "",
+  :data => "drvr_refuse_booking[_token]=%sdrvr_refuse_booking[reason]=%s&drvr_refuse_booking[comment]=%s&drvr_refuse_booking[agree]", # dernier peut être pas obligatoire ?
+  :header => ["Content-Type", "application/x-www-form-urlencoded"]
 }
 
 def save_cookie(cookie)
@@ -226,9 +254,9 @@ end
 # AcceptationNotification
 # When you have to accept a passenger for a trip
 class AcceptationNotification < Notification
-  attr_reader :user, :end_date
+  attr_reader :user, :end_date, :trip, :trip_date
   def prepare(data)
-    @user = data.first.scan(/Vous avez une demande de réservation de (.*) pour votre trajet/).flatten.first
+    @user = data.first.scan(/Demande de réservation de (.*)/).flatten.first
     parse()
   end
   def parse
@@ -238,20 +266,47 @@ class AcceptationNotification < Notification
     next_ = res['location']
     get_form_confirm_req = setup_http_request($dashboard, @cookie,{:url=>next_})
     res = @http.request(get_form_confirm_req)
-    @refuse, @accept = res.body.scan(/data-url="(\/seat-driver-action.*)"/).flatten
-    @end_date = res.body.scan(/strong data-date="([^"]*)"/).flatten.first
-    @trip = res.body.scan(/<h2 class="pull-left">\s(.*)\s*<\/h2>/).flatten.first
-    @trip_date = res.body.scan(/<p class="my-trip-elements size16 push-left no-clear my-trip-date">\s*(.*)\s*<\/p>/).flatten.first
-  end
-
-  def accept(user, date)
+    body = res.body.force_encoding('utf-8')
+    # @cancel_url is present only if someone reserved a seat (already valid)
+    @cancel_url = body.scan(/data-url="(\/seat-driver-action.*)"\s*data-show-modal="(?:driverCancel)?"/).flatten.first
+    @refuse_url, @accept_url = body.scan(/data-url="(\/seat-driver-action.*)"\s*data-show-modal="(?:pendingRefuse)?(?:pendingAccept)?"/).flatten
+    @end_date = body.scan(/strong data-date="([^"]*)"/).flatten.first
+    @trip = body.scan(/<h2 class="pull-left">\s(.*)\s*<\/h2>/).flatten.first.strip.gsub("&rarr;", "->")
+    @trip_date = body.scan(/<p class="my-trip-elements size16 push-left no-clear my-trip-date">\s*(.*)\s*<\/p>/).flatten.first
     if @user != user
       raise AcceptationError, "User unknown", caller
     end
     if @trip_date != date
       raise AcceptationError, "Date doesn't match", caller
     end
-    accept_req = setup_http_request($dashboard, @cookie,{:url=>@accept})
+    if not @trip
+      raise AcceptationError, "Can't get trip", caller
+    end
+    if not @end_date
+      raise AcceptationError, "Can't get end_date", caller
+    end
+    if not @accept_url
+      raise AcceptationError, "Can't get accept_url ", caller
+    end
+    if not @refuse_url
+      raise AcceptationError, "Can't get refuse_url", caller
+    end
+  end
+
+  def accept(user, date)
+    accept_req = setup_http_request($dashboard, @cookie,{:url=>@accept_url})
+    res = @http.request(accept_req)
+    if res.code.to_i == 302
+      r = res['location'].match(/\/dashboard\/trip-offer\/\d+\/passengers/)
+      if r.length == 1 # success
+        return true
+      end
+    end
+    return false
+  end
+
+  def refuse(user, date, reason, comment)
+    accept_req = setup_http_request($dashboard, @cookie,{:url=>@refuse_url, :arg => [@token, reason, comment]})
     res = @http.request(accept_req)
     if res.code.to_i == 302
       r = res['location'].match(/\/dashboard\/trip-offer\/\d+\/passengers/)

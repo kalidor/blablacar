@@ -17,6 +17,7 @@ parser = OptionParser.new do |opts|
   opts.on("-a", "--avis <OPINION>", "Send an 'opinion' to a user") do |v| options[:avis] = v; end
   opts.on("-g", "--avis-recu [PAGE]", "Display user opinion") do |v| options[:avis_recu] = v || ''; end
   opts.on("-c", "--code <CODE>", "Code to validate a trip") do |v| options[:code] = v; end
+  opts.on("-A", "--accept", "Accept passenger on a trip") do |v| options[:acceptation] = v; end
   opts.on("-d", "--driver", "Driver name to evaluate and leave an opinion") do |v| options[:driver] = v; end
   opts.on("-l", "--list", "List planned trip with passengers") do |v| options[:list] = v; end
   opts.on("-n", "--note <NOTE>", "Send evaluation note to a user") do |v| options[:note] = v; end
@@ -27,8 +28,11 @@ parser = OptionParser.new do |opts|
   opts.on("-p", "--passenger", "Passenger name to evaluate and leave an opinion") do |v| options[:passenger] = v; end
   opts.on("-s", "--money-status", "Get the money transfer status") do |v| options[:money_status] = v; end
   opts.on("-t", "--transfert-request", "Make money transfert request") do |v| options[:transfer] = v; end
+  opts.on("-T", "--tripdate <TRIPDATE>", "Trip date and hour") do |v| options[:date] = v; end
+  opts.on("-R", "--reason <REASON>", "Reason why you didn't accept this passenger on the trip") do |v| options[:reason] = v; end
+  opts.on("-r", "--comment <comment>", "Comment on why you didn't accept this passenger on the trip") do |v| options[:comment] = v; end
   opts.on("-u", "--user user", "Validate a trip with this guy") do |v| options[:user] = v; end
-  #opts.on("-V", "--[no-]verbose", "Run verbosely") do |v| options[:verbose] = v; end
+  opts.on("-V", "--verbose", "Run verbosely") do |v| options[:verbose] = v; end
   opts.on("-D", "--debug", "For debug (run in proxy 127.0.0.1:8080)") do |v| options[:debug] = v; end
   opts.on_tail("-h", "--help", "Show this help message") do puts opts; exit 0; end
   opts.on_tail("Configuration sample (#{ENV['HOME']}/.blablacar.rc):")
@@ -141,13 +145,76 @@ if options[:message]
   end
 end
 
+if options[:reason]
+  case options[:reason]
+    when "l", "L", "list", "List", "LIST"
+      puts "Reason list:"
+      l = REASON_REFUSE.keys().map{|r| r.length}.max + 5
+      REASON_REFUSE.map{|k, v|
+        puts "  #{k} %s  #{v}" % (" " * (l - k.length))
+      }
+  end
+end
+
+if options[:refuse]
+  if not options[:user]
+    STDERR.write("Need -u <username> argument")
+  end
+  if not options[:date]
+    STDERR.write("Need -T <tripdate> argument")
+  end
+  if not options[:reason]
+    STDERR.write("Need -R <reason> argument (use -R list to see all reasons)")
+  end
+  if not options[:comment]
+    STDERR.write("Need - <comment> argument")
+  end
+  if not blabla.notifications?
+    puts "None notification"
+    return
+  end
+  blabla.notifications.map{|notif|
+    next if not notif.class == AcceptationNotification
+    if notif.refuse(options[:user], options[:date], options[:reason], options[:comment])
+      puts "[+] Refused"
+    else
+      puts "[-] Failed"
+    end
+  }
+end
+
+if options[:acceptation]
+  if not options[:user]
+    STDERR.write("Need -u <username> argument")
+  end
+  if not options[:date]
+    STDERR.write("Need -T <tripdate> argument")
+  end
+  if not blabla.notifications?
+    puts "None notification"
+    return
+  end
+  blabla.notifications.map{|notif|
+    next if not notif.class == AcceptationNotification
+    if notif.accept(options[:user], options[:date])
+      puts "[+] Accepted"
+    else
+      puts "[-] Failed"
+    end
+  }
+end
+
 if options[:notifications]
   if not blabla.notifications?
     puts "None notification"
   else
     puts "Notification:"
     blabla.notifications.map{|notif|
-      puts notif.desc
+      if notif.class == AcceptationNotification
+        puts "#{notif.desc} : #{notif.trip} (#{notif.trip_date})"
+      else
+        puts notif.desc
+      end
     }
   end
 end
