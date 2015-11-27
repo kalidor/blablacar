@@ -80,11 +80,9 @@ blabla.parse_dashboard()
 #blabla.search_trip("Annecy", "Lyon", "30/09/2015")
 
 if options[:avis_recu]
-  if options[:avis_recu].empty?
-    blabla.get_opinion()
-  else
-    blabla.get_opinion(options[:avis_recu])
-  end
+  blabla.get_opinion(options[:avis_recu]).map{|a|
+    puts "[%s] par %s: %s (%s)" % a
+  }
 end
 
 if options[:message]
@@ -222,6 +220,10 @@ end
 if options[:avis]
   if not options[:user]
     STDERR.write("Need to pass username through --user option")
+    exit 0
+  end
+  if not options[:note]
+    STDERR.write("Need to pass note through --note option")
     exit 0
   end
   s = nil

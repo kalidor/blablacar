@@ -853,12 +853,14 @@ class Blablacar
   end
 
   def get_opinion(page=1)
+    if page.empty?
+      page=1
+    end
     dputs __method__.to_s
     req = setup_http_request($rating_received, @cookie, {:arg => [page]})
     res = @http.request(req)
-    ret = res.body.scan(/<h3 class="Rating-grade Rating-grade--\d">(.*)<\/h3>\s*<p class="Rating-text"><strong>(.*): <\/strong>(.*)<\/p>\s*<\/div>\s*<footer class="Speech-info">\s*<time class="Speech-date" datetime="[^"]*">(.*)<\/time>/)
-    puts ret.inspect
-
+    ret = CGI.unescapeHTML(res.body.force_encoding('utf-8')).scan(/<h3 class="Rating-grade Rating-grade--\d">(.*)<\/h3>\s*<p class="Rating-text"><strong>(.*): <\/strong>(.*)<\/p>\s*<\/div>\s*<footer class="Speech-info">\s*<time class="Speech-date" datetime="[^"]*">(.*)<\/time>/)
+    ret
   end
 
   def search_trip(city_start, city_end, date)
