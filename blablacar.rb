@@ -29,7 +29,7 @@ parser = OptionParser.new do |opts|
   opts.on("-s", "--money-status", "Get the money transfer status") do |v| options[:money_status] = v; end
   opts.on("-t", "--transfert-request", "Make money transfert request") do |v| options[:transfer] = v; end
   opts.on("-T", "--tripdate <TRIPDATE>", "Trip date and hour") do |v| options[:date] = v; end
-  opts.on("-R", "--reason <REASON>", "Reason why you didn't accept this passenger on the trip") do |v| options[:reason] = v; end
+  opts.on("-R", "--reason <REASON>", "Reason why you didn't accept this passenger on the trip. Use --reason=list to get available reasons") do |v| options[:reason] = v; end
   opts.on("-r", "--comment <comment>", "Comment on why you didn't accept this passenger on the trip") do |v| options[:comment] = v; end
   opts.on("-u", "--user user", "Validate a trip with this guy") do |v| options[:user] = v; end
   opts.on("-V", "--verbose", "Run verbosely") do |v| options[:verbose] = v; end
@@ -44,7 +44,7 @@ parser = OptionParser.new do |opts|
   opts.on_tail("Example:")
   opts.on_tail("#$0 --avis 'Nice trip' --user 'Pierre P' --note 5 --passenger")
   opts.on_tail("#$0 --avis 'Nice trip' --user 'Bob M' --note 5 --driver 5")
-  opts.on_tail("#$0 --user 'Bob M' --code ABCXYZ")
+  opts.on_tail("#$0 --user 'Bob M' --code ABCXYZ -p")
 end
 
 parser.parse!
@@ -167,7 +167,7 @@ if options[:refuse]
     STDERR.write("Need -R <reason> argument (use -R list to see all reasons)")
   end
   if not options[:comment]
-    STDERR.write("Need - <comment> argument")
+    STDERR.write("Need -r <comment> argument")
   end
   if not blabla.notifications?
     puts "None notification"
