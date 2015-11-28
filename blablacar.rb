@@ -308,7 +308,7 @@ if options[:list]
   else
     puts "See planned_passengers:"
     trips.keys.map{|id|
-      t = trips[id][:when].strftime("%A %D à %R")
+      t = trips[id][:when].strftime("%A %d %b à %R")
       d = t.gsub(t.split(" ").first, DAYS[t.split(" ").first])
       puts "%s (%s). Trip seen %s times" % [trips[id][:trip], d, trips[id][:stats]]
       if trips[id][:who].length == 0

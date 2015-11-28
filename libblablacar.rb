@@ -21,6 +21,20 @@ DAYS = {
   "Saturday" => "Samedi",
   "Sunday" => "Dimanche"
 }
+MONTHS = {
+  "Janvier" => "January",
+  "Février" => "February",
+  "Mars" => "March",
+  "Avril" => "April",
+  "Mai" => "May",
+  "Juin" => "June",
+  "Juillet" => "July",
+  "Août" => "August",
+  "Septembre" => "September",
+  "Octobre" => "October",
+  "Novembre" => "November",
+  "Décembre" => "December"
+}
 REASON_REFUSE = {
   "refuse_no_longer_do_trip"=>
   "J'ai un imprévu, je n'effectue plus le voyage",
@@ -161,15 +175,18 @@ def look_for_day(day)
 end
 
 def parse_time(tt)
+  MONTHS.map{|k,v|
+    tt.gsub!(k.downcase, v.downcase)
+  }
   case tt
     when /Aujourd'hui\s*à.*/
       t = Time.parse(tt)
     when /Demain\s*à.*/
       t = Time.parse(tt)+60*60*24
-    when /(?:Lundi)?(?:Mardi)?(?:Mercredi)?(?:Jeudi)?(?:Vendredi)?(?:Samedi)?(?:Dimanche)?\s*à.*/
-      diff = look_for_day(tt.split(" ").first)
-      t = Time.parse(tt)
     when /(?:Lundi)?(?:Mardi)?(?:Mercredi)?(?:Jeudi)?(?:Vendredi)?(?:Samedi)?(?:Dimanche)?\s*\d{1,2}\s*.*\s*à.*/
+      t = Time.parse(tt)
+    when /(?:Lundi)?(?:Mardi)?(?:Mercredi)?(?:Jeudi)?(?:Vendredi)?(?:Samedi)?(?:Dimanche)?\s*à.*/
+      #diff = look_for_day(tt.split(" ").first)
       t = Time.parse(tt)
     else
       t = Time.parse(tt)
