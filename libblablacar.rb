@@ -487,7 +487,8 @@ class AvisNotification < Notification
       puts "Uh I'm not being redirected?... What a failure!"
       return nil
     end
-    if res['location'] == "/dashboard/ratings/hints"
+    if res['location'].match(/\/dashboard\/ratings\/saved\/([^\/]+)/) or
+      res['location'] == "/dashboard/ratings/hints"
       return true
     else
       eputs res['location']
