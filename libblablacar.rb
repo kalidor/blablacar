@@ -154,6 +154,12 @@ $refuse_req = {
   :data => "drvr_refuse_booking[_token]=%sdrvr_refuse_booking[reason]=%s&drvr_refuse_booking[comment]=%s&drvr_refuse_booking[agree]", # dernier peut être pas obligatoire ?
   :header => ["Content-Type", "application/x-www-form-urlencoded"]
 }
+$update_seat_req = {
+  :method => Net::HTTP::Post,
+  :url => "",
+  :data => "count=%d",
+  :header => ["Content-Type", "application/x-www-form-urlencoded"]
+}
 
 def save_cookie(cookie)
   dputs __method__.to_s
@@ -482,7 +488,6 @@ class AvisNotification < Notification
     token = res.body.scan(/<input type="hidden" id="rating_preview__token" name="rating_preview\[_token\]" value="([^"]*)" \/>/).flatten.first
     req = setup_http_request($avis_req_post_confirm, @cookie, {:url => url, :arg => [token]})
     res = @http.request(req)
-    File.open("/tmp/last.html", "w") do |f| f.write(res.body); end
     if not res['location']
       puts "Uh I'm not being redirected?... What a failure!"
       return nil
@@ -660,10 +665,12 @@ class Blablacar
     t={}
     t[:trip] = res.scan(/<h2 class="pull-left">\s(.*)\s*<\/h2>/).flatten.map{|c| c.strip!}.first.gsub("&rarr;", "->")
     t[:when] = parse_time(res.scan(/<p class="my-trip-elements size16 push-left no-clear my-trip-date">\s(.*)\s*<\/p>/).flatten.map{|c| c.strip!}.first)
+    t[:seat_url] = res.scan(/<form action="(\/dashboard\/trip\/\d+\/_seatCount\?token=[^"]+)/).flatten.first
+    t[:seats] = res.scan(/(?:<input type="text" name="count" class="nb-seats" data-booking-enabled="\d+" data-value-warning="\d+" data-number-min="\d+" data-number-max="\d+" value="(\d+)")/).flatten.first
     t[:who] = res.scan(/<a href="\/membre\/profil\/.*" class="blue">\s*(.*)\s*<\/a>/).flatten.map{|c| c.strip!}
     t[:note] = res.scan(/<span class="bold dark-gray">(.*)<\/span><span class="fade-gray">/).flatten
     t[:phone] = res.scan(/<span class="mobile*">(.*)<\/span>/).flatten
-    t[:place] = res.scan(/<li class="passenger-seat">(\d) place[s]?<\/li>/).flatten
+    t[:seat_taken] = res.scan(/<li class="passenger-seat">(\d) place[s]?<\/li>/).flatten
     t[:status] = res.scan(/<div class="pull-right bold (?:green|dark-gray) size16 uppercase">(.*)<\/div>/).flatten
     t[:actual_trip] = res.scan(/<ul class="unstyled passenger-trip size17">\s*<li>\s([a-zA-Zé\ \-]*)\s*<\/li>/).flatten.map{|c| c.strip!;c.gsub!(" - ", " -> ")}
 
@@ -818,7 +825,6 @@ class Blablacar
   def messages_parsing(body, _private=nil, all=nil)
     term = "/trajet-"
     term = "\\/messages\\/private" if _private
-    File.open("/tmp/body_#{_private.to_s}_#{rand(0..12)}.html", "w") do |f| f.write body; end
     if not all
       unread = nil
       index = body.index(/<li class="unread">\s*<a href="#{term}/)
@@ -968,5 +974,18 @@ class Blablacar
       retry
     end
     @authenticated = true
+  end
+
+  def update_seat(trip_url, seat)
+    dputs __method__.to_s
+    req = setup_http_request($update_seat_req, @cookie, {:arg => [seat]})
+    res = @http.request(req)
+    # json return
+    body = JSON.parse(res.body) #{"status":"OK","value":0}
+    if body['status'] == "OK" and body["value"] == seat
+      return true
+    else
+      return false
+    end
   end
 end

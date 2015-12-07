@@ -311,13 +311,18 @@ if options[:list]
       t = trips[id][:when].strftime("%A %d %b à %R")
       d = t.gsub(t.split(" ").first, DAYS[t.split(" ").first])
       puts "%s (%s). Trip seen %s times" % [trips[id][:trip], d, trips[id][:stats]]
-      if trips[id][:who].length == 0
-        puts "\t-Empty"
-        next
+      if trips[id][:who].length > 0
+        trips[id][:who].each_with_index{|v, i|
+          puts "\t- %s %s\xe2\x98\x85 (%s) :: [%s seat(s)] - %s %s" % [trips[id][:who][i], trips[id][:note][i], trips[id][:phone][i], trips[id][:seat_taken][i], trips[id][:actual_trip][i], trips[id][:status][i] == "annulée" ? ">> ANNULÉE <<" : ""]
+        }
+        puts "\t- %s seats left" % trips[id][:seats] if trips[id][:seats]
+      else
+        if not trips[id][:seats]
+          puts "\t- Trip already done"
+        elsif trips[id][:seats] == "0"
+          puts "\t- Trip Complete!"
+        end
       end
-      trips[id][:who].each_with_index{|v, i|
-        puts "\t-%s %s\xe2\x98\x85 (%s) :: [%s seat(s)] - %s %s" % [trips[id][:who][i], trips[id][:note][i], trips[id][:phone][i], trips[id][:place][i], trips[id][:actual_trip][i], trips[id][:status][i] == "annulée" ? ">> ANNULÉE <<" : ""]
-      }
     }
   end
 end
