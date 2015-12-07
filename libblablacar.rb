@@ -176,7 +176,7 @@ end
 
 def parse_time(tt)
   MONTHS.map{|k,v|
-    tt.gsub!(k.downcase, v.downcase)
+    tt.gsub!(/\<k.downcase\>/, v.downcase)
   }
   case tt
     when /Aujourd'hui\s*à.*/
