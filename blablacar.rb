@@ -27,6 +27,7 @@ parser = OptionParser.new do |opts|
   opts.on("-M", "--money-available", "Get the available amount of money") do |v| options[:money] = v; end
   opts.on("-p", "--passenger", "Passenger name to evaluate and leave an opinion") do |v| options[:passenger] = v; end
   opts.on("-s", "--money-status", "Get the money transfer status") do |v| options[:money_status] = v; end
+  opts.on("-S", "--seats number of total seats available", "Number of available seats for given trip") do |v| options[:seats] = v; end
   opts.on("-t", "--transfert-request", "Make money transfert request") do |v| options[:transfer] = v; end
   opts.on("-T", "--tripdate <TRIPDATE>", "Trip date and hour") do |v| options[:date] = v; end
   opts.on("-R", "--reason <REASON>", "Reason why you didn't accept this passenger on the trip. Use --reason=list to get available reasons") do |v| options[:reason] = v; end
@@ -321,8 +322,21 @@ if options[:list]
           puts "\t- Trip already done"
         elsif trips[id][:seats] == "0"
           puts "\t- Trip Complete!"
+        else
+          puts "\t- %s seats left" % trips[id][:seats] if trips[id][:seats]
         end
       end
     }
   end
 end
+if options[:seats]
+  if not options[:date]
+    STDERR.write("Need to pass --trip <trip's date and hours> and --seats <seat number>")
+  end
+  if blabla.update_seat(options[:date], options[:seats])
+    puts "OK"
+  else
+    puts "Failed to set seat for this trip"
+  end
+end
+

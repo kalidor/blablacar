@@ -157,8 +157,8 @@ $refuse_req = {
 $update_seat_req = {
   :method => Net::HTTP::Post,
   :url => "",
-  :data => "count=%d",
-  :header => ["Content-Type", "application/x-www-form-urlencoded"]
+  :data => "count=%s",
+  :header => ["Content-Type", "application/x-www-form-urlencoded; charset=UTF-8"]
 }
 
 def save_cookie(cookie)
@@ -185,15 +185,8 @@ def parse_time(tt)
     tt.gsub!(/\<k.downcase\>/, v.downcase)
   }
   case tt
-    when /Aujourd'hui\s*à.*/
-      t = Time.parse(tt)
     when /Demain\s*à.*/
       t = Time.parse(tt)+60*60*24
-    when /(?:Lundi)?(?:Mardi)?(?:Mercredi)?(?:Jeudi)?(?:Vendredi)?(?:Samedi)?(?:Dimanche)?\s*\d{1,2}\s*.*\s*à.*/
-      t = Time.parse(tt)
-    when /(?:Lundi)?(?:Mardi)?(?:Mercredi)?(?:Jeudi)?(?:Vendredi)?(?:Samedi)?(?:Dimanche)?\s*à.*/
-      #diff = look_for_day(tt.split(" ").first)
-      t = Time.parse(tt)
     else
       t = Time.parse(tt)
   end
@@ -638,8 +631,9 @@ class Blablacar
     trips = {}
     ts = body.scan(/"\/dashboard\/trip-offer\/(\d*)\/passengers" class=/).flatten
     stats = body.scan(/visit-stats">Annonce vue (\d+) fois<\/span>/).flatten
+    dates = body.scan(/<p class="my-trip-elements size16 push-left no-clear my-trip-date">\s*(.*)\s*<\/p>/).flatten
     ts.each_with_index do |v, i|
-      trips[ind + i] = {:trip => v, :stats => stats[i]}
+      trips[ind + i] = {:trip => v, :stats => stats[i], :date => dates[i]}
     end
     trips
   end
@@ -650,7 +644,7 @@ class Blablacar
     trip_offer_req = setup_http_request($tripoffers, @cookie, {:arg => [1]})
     res = @http.request(trip_offer_req)
     trips = {}
-    trips = list_trip_offers(res.body)
+    trips = list_trip_offers(CGI.unescapeHTML(res.body.force_encoding("utf-8")))
     pages = res.body.scan(/<a href="\/dashboard\/trip-offers\/active\?page=(\d*)/).flatten.uniq
     pages.map{|p|
       trip_offer_req = setup_http_request($tripoffers, @cookie, {:arg => [p]})
@@ -976,13 +970,28 @@ class Blablacar
     @authenticated = true
   end
 
-  def update_seat(trip_url, seat)
+  def update_seat(trip_date, seat)
     dputs __method__.to_s
-    req = setup_http_request($update_seat_req, @cookie, {:arg => [seat]})
+    trips = get_trip_offers()
+    d = parse_time(trip_date)
+    t_id = nil
+    trips.keys.map{|k|
+      if d == parse_time(trips[k][:date])
+        t_id = trips[k][:trip]
+        break
+      end
+    }
+    if not t_id
+      return false
+    end
+    trip_req = setup_http_request($trip, @cookie, {:arg => [t_id]})
+    res = @http.request(trip_req)
+    p = parse_trip(res.body)
+    req = setup_http_request($update_seat_req, @cookie, {:url => p[:seat_url], :arg => [seat.to_i]})
     res = @http.request(req)
     # json return
     body = JSON.parse(res.body) #{"status":"OK","value":0}
-    if body['status'] == "OK" and body["value"] == seat
+    if body['status'] == "OK" and body["value"] == seat.to_i
       return true
     else
       return false
