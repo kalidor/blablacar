@@ -157,7 +157,7 @@ $refuse_req = {
 $update_seat_req = {
   :method => Net::HTTP::Post,
   :url => "",
-  :data => "count=%s",
+  :data => "count=%d",
   :header => ["Content-Type", "application/x-www-form-urlencoded; charset=UTF-8"]
 }
 
@@ -196,9 +196,9 @@ end
 # Set up the HTTP request object to avoir duplicated code
 def setup_http_request(obj, cookie=nil, args={})
   if args.has_key?(:url)
-    if args[:url].scan("%s").length > 0
-      if args[:url].scan("%s").length != args[:arg].length
-        aputs "URL contains %d '%%s' argument... Fix your code" % args[:url].scan("%s").length
+    if args[:url].scan(/%[s|d]/).length > 0
+      if args[:url].scan(/%[s|d]/).length != args[:arg].length
+        aputs "URL contains %d '%%s' or '%%d' argument... Fix your code" % args[:url].scan(/%[s|d]/).length
         aputs __callee__
         exit 2
       end
