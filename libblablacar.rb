@@ -208,8 +208,8 @@ def setup_http_request(obj, cookie=nil, args={})
     end
   else
     if args.has_key?(:arg)
-      if obj[:url].scan("%s").length != args[:arg].length
-        aputs "URL contains %d '%%s' argument... Fix your code" % args[:url].scan("%s").length
+      if obj[:url].scan(/%[s|d]/).length != args[:arg].length
+        aputs "URL contains %d '%%s' or '%%d' argument... Fix your code" % args[:url].scan(/%[s|d]/).length
         aputs __callee__
         exit 2
       end
@@ -230,9 +230,9 @@ def setup_http_request(obj, cookie=nil, args={})
     req.add_field(obj[:header][0], obj[:header][1])
   end
   if obj.has_key?(:data)
-    if obj[:data].scan("%s").length > 0
-      if obj[:data].scan("%s").length != args[:arg].length
-        aputs "URL contains %d '%%s' argument... Fix your code" % args[:url].scan("%s").length
+    if obj[:data].scan(/%[s|d]/).length > 0
+      if obj[:data].scan(/%[s|d]/).length != args[:arg].length
+        aputs "URL contains %d '%%s' or '%%d' argument... Fix your code" % args[:url].scan(/%[s|d]/).length
         aputs __callee__
         exit 2
       else

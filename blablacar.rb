@@ -27,7 +27,7 @@ parser = OptionParser.new do |opts|
   opts.on("-M", "--money-available", "Get the available amount of money") do |v| options[:money] = v; end
   opts.on("-p", "--passenger", "Passenger name to evaluate and leave an opinion") do |v| options[:passenger] = v; end
   opts.on("-s", "--money-status", "Get the money transfer status") do |v| options[:money_status] = v; end
-  opts.on("-S", "--seats number of total seats available", "Number of available seats for given trip") do |v| options[:seats] = v; end
+  opts.on("-S", "--seats number of available seats. If seat is already reserved, it doesn't count", "Number of available seats for given trip") do |v| options[:seats] = v; end
   opts.on("-t", "--transfert-request", "Make money transfert request") do |v| options[:transfer] = v; end
   opts.on("-T", "--tripdate <TRIPDATE>", "Trip date and hour") do |v| options[:date] = v; end
   opts.on("-R", "--reason <REASON>", "Reason why you didn't accept this passenger on the trip. Use --reason=list to get available reasons") do |v| options[:reason] = v; end
