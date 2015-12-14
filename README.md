@@ -35,16 +35,13 @@ Show payment status:
 [8:20 ~/bin/blabla:master]% ./blablacar.rb -s
 Transfer successfully requested
 Money status (lastpage):
-  Mathilde L (2 places - 18 €) - Bron -> Annecy [Verifications en cours]
-  Lucie B (1 place - 9 €) - Bron -> Annecy [Verifications en cours]
-  Aurelien N (1 place - 9 €) - Bron -> Annecy [Verifications en cours]
-  Audrey H (1 place - 9 €) - Bron -> Annecy [Processing transfer]
-  Alexandre R (1 place - 9 €) - Annecy -> Bron [Processing transfer]
-  Alice B (1 place - 9 €) - Bron -> Annecy [Verifications en cours]
-  Bastien C (1 place - 9 €) - Annecy -> Bron [Verifications en cours]
-  Samia M (1 place - 9 €) - Bron -> Annecy [Verifications en cours]
-  Fabien A (3 places - 27 €) - Lyon -> Annecy [Virement en cours]
-  Nathanael L (1 place - 9 €) - Bron -> Annecy [Verifications en cours]
+  AAA G (1 place - 9 €) - Annecy -> Lyon [Virement en cours]
+  BBB W (1 place - 6 €) - Lyon -> Chambéry [Virement en cours]
+  CCC M (1 place - 9 €) - Annecy -> Lyon [Virement en cours]
+  DDD S (1 place - 9 €) - Annecy -> Lyon [Virement en cours]
+  EEE Y (2 places - 18 €) - Bron -> Annecy [Verifications en cours]
+  FFF Y (1 place - 9 €) - Lyon -> Annecy [Virement effectué le 04/12/2015]
+  GGG B (2 places - 6 €) - Lyon -> Chambéry [Virement effectué le 04/12/2015]
 ```
 
 Send an opinion about a passenger / driver:
@@ -54,4 +51,24 @@ Send an opinion about a passenger / driver:
 [+] Authenticated!
 Apres votre voyage Bron-Annecy, laissez un avis a votre passager Christophe R
 Avis envoye
+```
+Multiple option in one command line:
+```
+[20:51 ~/Codes/blablacar]% ./blablacar.rb -lNMm
+[+] Authenticated
+No new messages  # -m
+Notification:    # -N
+Après votre voyage Lyon-Annecy, laissez un avis à votre passager Arthur D
+Après votre voyage Lyon-Annecy, laissez un avis à votre passager Marie
+Total already requested: 1 467 €  # -M
+Available money: 69 €             # -M
+Getting next planned trips:       # -l
+No future planned trip(s)
+```
+
+Ask for transfert money:
+```
+[11:00 ~/Codes/blablacar]% ./blablacar.rb -t
+[+] Authenticated
+Transfer successfully requested
 ```
