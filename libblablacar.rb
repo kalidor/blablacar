@@ -756,7 +756,7 @@ class Blablacar
     end
     # looking for uniq value for each discussion (url to respond to)
     urls = body.scan(/<form id="qa"\s*class="[^"]*"\s*action="(\/messages\/respond\/[^"]*)"\s*method="POST"/).flatten
-    trip_date = body.scan(/<strong class="RideDetails-infoValue">\s*<i class="bbc-icon2-calendar" aria-hidden="true"><\/i>\s*<span>\s*(.*)\s*<\/span>\s*<\/strong>/).flatten.first
+    trip_date = body.scan(/<strong class="RideDetails-infoValue">\s*<i class="bbc-icon2-calendar" aria-hidden="true"><\/i>\s*<span>\s*(.*)\s*/).flatten.first
     ret = Array.new
     u = 0
     urls.map{|t|

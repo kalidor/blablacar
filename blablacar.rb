@@ -87,7 +87,7 @@ if options[:avis_recu]
 end
 
 if options[:message]
-  if blabla.messages? != 0
+  if blabla.messages? > 0
     puts "#{blabla.messages} new message(s)"
     all_msgs = blabla.get_new_messages
     cpt = 0
