@@ -69,9 +69,38 @@ $dashboard = {
   :url => "/dashboard",
 }
 
-$tripoffers = {
+$active_trip_offers = {
   :method => Net::HTTP::Get,
   :url => "/dashboard/trip-offers/active?page=%s",
+}
+
+$inactive_trip_offers = {
+  :method => Net::HTTP::Get,
+  :url => "/dashboard/trip-offers/inactive?page=%s",
+}
+
+$duplicate_active_trip_offers = {
+  :method => Net::HTTP::Post,
+  :url => "/dashboard/trip-offers/active",
+  :header => ["Content-Type", "application/x-www-form-urlencoded"],
+  :referer => "https://www.blablacar.fr/dashboard/trip-offers/active"
+}
+
+$duplicate_inactive_trip_offers = {
+  :method => Net::HTTP::Post,
+  :url => "/dashboard/trip-offers/inactive",
+  :header => ["Content-Type", "application/x-www-form-urlencoded", "Pragma", "no-cache", "upgrade-insecure-requests", "1"],
+  :referer => "https://www.blablacar.fr/dashboard/trip-offers/inactive"
+}
+
+$check_publication = {
+  :method => Net::HTTP::Get,
+  :url => "/publication/processing",
+}
+
+$publication_processed = {
+  :method => Net::HTTP::Get,
+  :url => "/publication/processed/%s"
 }
 
 $trip = {
@@ -209,20 +238,29 @@ def setup_http_request(obj, cookie=nil, args={})
     end
   else
     if args.has_key?(:arg)
-      if obj[:url].scan(/%[s|d]/).length != args[:arg].length
-        aputs "URL contains %d '%%s' or '%%d' argument... Fix your code" % args[:url].scan(/%[s|d]/).length
-        aputs __callee__
-        exit 2
+      if obj[:url].scan(/%[s|d]/).length > 0
+        if obj[:url].scan(/%[s|d]/).length != args[:arg].length
+          aputs "URL contains %d '%%s' or '%%d' argument... Fix your code" % obj[:url].scan(/%[s|d]/).length
+          aputs __callee__
+          exit 2
+        end
+        req = obj[:method].new(obj[:url] % args[:arg])
+      else
+        req = obj[:method].new(obj[:url])
       end
-      req = obj[:method].new(obj[:url] % args[:arg])
     else
       req = obj[:method].new(obj[:url])
     end
   end
-  req.add_field("Host", "www.blablacar.fr")
+  req["Host"] = "www.blablacar.fr"
+  req["origin"] = "https://www.blablacar.fr"
   req["User-Agent"] = "Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20100101 Firefox/18.0"
   req["Accept"] = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-  req.add_field("Referer", "https://www.blablacar.fr/dashboard")
+  if obj.has_key?(:referer)
+    req['Referer'] = obj[:referer]
+  else
+    req["Referer"] = "https://www.blablacar.fr/dashboard"
+  end
   req.add_field("Connection", "keep-alive")
   if cookie
     req.add_field("Cookie", cookie)
@@ -237,11 +275,12 @@ def setup_http_request(obj, cookie=nil, args={})
         aputs __callee__
         exit 2
       else
-      req.body = obj[:data] % args[:arg]
+        req.body = obj[:data] % args[:arg]
       end
     else
       req.body = obj[:data]
     end
+    req['Content-Length'] = req.body.length
   end
   req
 end
@@ -253,6 +292,15 @@ class SendReponseMessageFailed < StandardError
 end
 
 class AcceptationError < StandardError
+end
+
+class UpdateSeatError < StandardError
+end
+
+class DuplicateTripError < StandardError
+end
+
+class CheckPublishedTripError < StandardError
 end
 
 # Generic Notification class
@@ -542,9 +590,23 @@ class Blablacar
      @notifications
   end
 
+  def update_cookie(data)
+    if data['set-cookie']
+      # don't by shy, let's take every cookie...
+      t = data['set-cookie'].scan(/([a-zA-Z0-9_\-\.]*=[^;]*;)/).flatten
+      t.delete_if{|c| c.start_with?("path=")}
+      t.delete_if{|c| c.start_with?("expires=")}
+      t.map{|tt|
+        if not @cookie.include?(tt)
+          @cookie = @cookie + tt
+        end
+      }
+    end
+  end
+
   # Parse header in order to get the cookie
   def get_cookie(data)
-    if data['Set-Cookie']
+    if data['set-cookie']
       # don't by shy, let's take every cookie...
       t = data['Set-Cookie'].scan(/([a-zA-Z0-9_\-\.]*=[^;]*)/).flatten
       t.delete_if{|c| c.start_with?("path")}
@@ -628,31 +690,46 @@ class Blablacar
     res.body.force_encoding('utf-8')
   end
 
-  def list_trip_offers(body, ind=0)
+  def list_trip_offers(body)
     trips = {}
     ts = body.scan(/"\/dashboard\/trip-offer\/(\d*)\/passengers" class=/).flatten
     stats = body.scan(/visit-stats">Annonce vue (\d+) fois<\/span>/).flatten
     dates = body.scan(/<p class="my-trip-elements size16 push-left no-clear my-trip-date">\s*(.*)\s*<\/p>/).flatten
+    duplicate = body.scan(/<input type="hidden" id="publication_duplicate_\d+__token" name="publication_duplicate_\d+\[_token\]" value="([^"]+)" \/>/).flatten
     ts.each_with_index do |v, i|
-      trips[ind + i] = {:trip => v, :stats => stats[i], :date => dates[i]}
+      trips[v] = {:trip => v, :stats => stats[i], :date => dates[i], :duplicate => duplicate[i]}
     end
     trips
   end
 
   # Get all trip's offers id
-  def get_trip_offers
+  def get_trip_offers(active=true)
     dputs __method__.to_s
-    trip_offer_req = setup_http_request($tripoffers, @cookie, {:arg => [1]})
+    if active
+      trip_offer_req = setup_http_request($active_trip_offers, @cookie, {:arg => [1]})
+    else
+      trip_offer_req = setup_http_request($inactive_trip_offers, @cookie, {:arg => [1]})
+    end
     res = @http.request(trip_offer_req)
+    update_cookie(res)
     trips = {}
     trips = list_trip_offers(CGI.unescapeHTML(res.body.force_encoding("utf-8")))
     pages = res.body.scan(/<a href="\/dashboard\/trip-offers\/active\?page=(\d*)/).flatten.uniq
     pages.map{|p|
-      trip_offer_req = setup_http_request($tripoffers, @cookie, {:arg => [p]})
+      trip_offer_req = setup_http_request($active_trip_offers, @cookie, {:arg => [p]})
       res = @http.request(trip_offer_req)
-      trips = trips.merge(list_trip_offers(res.body, trips.length))
+      trips = trips.merge(list_trip_offers(res.body))
     }
     trips
+  end
+
+  # Get all trip's offers id
+  def get_active_trip_offers
+    get_trip_offers(active=true)
+  end
+
+  def get_inactive_trip_offers
+    get_trip_offers(active=false)
   end
 
   def parse_trip(data)
@@ -682,12 +759,13 @@ class Blablacar
   # Display all passengers for all the future trips
   def get_planned_passengers
     dputs __method__.to_s
-    _trips = get_trip_offers()
+    _trips = get_active_trip_offers()
     m="Parsing (on #{_trips.length}): "
     print m
     trips = {}
-    _trips.map{|i, t|
-      id = t[:trip]
+    _trips.each_with_index{|t,i|
+      id = t.first
+      t = t[1]
       print i
       trip_req = setup_http_request($trip, @cookie, {:arg => [id]})
       res = @http.request(trip_req)
@@ -982,8 +1060,9 @@ class Blablacar
         break
       end
     }
+    #We did not find the trip
     if not t_id
-      return false
+      raise UpdateSeatError, "Trip not found"
     end
     trip_req = setup_http_request($trip, @cookie, {:arg => [t_id]})
     res = @http.request(trip_req)
@@ -993,6 +1072,80 @@ class Blablacar
     # json return
     body = JSON.parse(res.body) #{"status":"OK","value":0}
     if body['status'] == "OK" and body["value"] == seat.to_i
+      return true
+    else
+      return false
+    end
+  end
+
+  def duplicate(date_src, date_dst_departure, date_dst_return=nil)
+    match = nil
+    indx = nil
+    [get_active_trip_offers, get_inactive_trip_offers].each_with_index{|results, ind|
+      res = results.select{|t_id, t_values| parse_time(t_values[:date]) == parse_time(date_src)}
+      if res.length > 0
+        match = res[res.keys.first]
+        indx = ind
+        break
+      end
+    }
+    if not match
+      raise DuplicateTripError, "Trip to duplicate not found"
+    end
+    data = []
+    data << CGI.escape("publication_duplicate_#{match[:trip]}[departureDate][date]") + "=" + parse_time(date_dst_departure).strftime("%d/%m/%Y")
+    data << CGI.escape("publication_duplicate_#{match[:trip]}[departureDate][time][hour]") + "=" + parse_time(date_dst_departure).strftime("%H").to_i.to_s
+    data << CGI.escape("publication_duplicate_#{match[:trip]}[departureDate][time][minute]") + "=" + parse_time(date_dst_departure).strftime("%M").to_i.to_s
+    data << CGI.escape("publication_duplicate_#{match[:trip]}[returnDate][date]") + "=" + (date_dst_return ? parse_time(date_dst_return).strftime("%d/%m/%Y") : "")
+    data << CGI.escape("publication_duplicate_#{match[:trip]}[returnDate][time][hour]") + "=" + (date_dst_return ? parse_time(date_dst_return).strftime("%H").to_i.to_s : "")
+    data << CGI.escape("publication_duplicate_#{match[:trip]}[returnDate][time][minute]") + "=" + (date_dst_return ? parse_time(date_dst_return).strftime("%M").to_i.to_s : "")
+    data << CGI.escape("publication_duplicate_#{match[:trip]}[_token]") + "=" + match[:duplicate]
+    if indx == 0
+      $duplicate_active_trip_offers[:data] = data.join("&")
+      trip_dupl_req = setup_http_request($duplicate_active_trip_offers, @cookie)
+    else
+      $duplicate_inactive_trip_offers[:data] = data.join("&")
+      trip_dupl_req = setup_http_request($duplicate_inactive_trip_offers, @cookie)
+    end
+    res = @http.request(trip_dupl_req)
+    if res.code != "302" # Failed
+      raise DuplicateTripError, "HTTP code should be 302 after [step 1 requesting]"
+    end
+    to_req = res['location'] # should be /trip/<start>-<end>-<id>/compute
+    req = setup_http_request($dashboard, @cookie, {:url => to_req}) # $dashboard for Get method
+    res = @http.request(req)
+    if res.code != "302"
+      raise DuplicateTripError, "HTTP code should be 302 after [step 2] computing"
+    end
+    to_req = res['location'] # should be /trip/publish
+    req = setup_http_request($dashboard, @cookie, {:url => to_req}) # $dashboard for Get method
+    res = @http.request(req)
+    if res.code != "302"
+      raise DuplicateTripError, "HTTP code should be 302 after [step 3 publishing]"
+    end
+    to_req = res['location'] #should be /publication/processing
+    req = setup_http_request($dashboard, @cookie, {:url => to_req}) # $dashboard for Get method
+    res = @http.request(req)
+    if res.code != "200"
+      raise DuplicateTripError, "HTTP code should be 302 after [step 4 processing]"
+    end
+    return true
+  end
+  
+  def check_trip_published
+    req = setup_http_request($check_publication, @cookie)
+    res = @http.request(req)
+    if res.code != "200"
+      raise CheckPublishedTripError, "HTTP code should be 200 here [step 1 getting status]"
+    end
+    # should be JSON data like {"published":true,"encrypted_offer_id":"<sort of hash here>"}
+    jres = JSON.parse(res.body)
+    req = setup_http_request($publication_processed, @cookie, {:arg => [jres['encrypted_offer_id']]})
+    res = @http.request(req)
+    if res.code != "200"
+      raise CheckPublishedTripError, "HTTP code should be 200 here [step 2 checking]"
+    end
+    if res.body.force_encoding('utf-8').include?("Votre annonce a bien été publiée")
       return true
     else
       return false

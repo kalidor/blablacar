@@ -336,3 +336,5 @@ if options[:seats]
   end
 end
 
+#blabla.duplicate("2015/12/08 à 6h", "2015/12/17 à 6h")
+#blabla.check_trip_published
