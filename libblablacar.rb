@@ -181,8 +181,9 @@ def look_for_day(day)
 end
 
 def parse_time(tt)
+  tt = tt.force_encoding('utf-8')
   MONTHS.map{|k,v|
-    tt.gsub!(/\<k.downcase\>/, v.downcase)
+    tt.gsub!(/#{k}/i, v.downcase)
   }
   case tt
     when /Demain\s*à.*/
