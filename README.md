@@ -8,6 +8,7 @@ Here is what it works:
 + request money transfer
 + check money transfer status
 + get current user opinions
++ Duplicate passed or planned trip
 
 Show notifications:
 ```bash
