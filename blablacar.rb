@@ -29,11 +29,12 @@ parser = OptionParser.new do |opts|
   opts.on("-s", "--money-status", "Get the money transfer status") do |v| options[:money_status] = v; end
   opts.on("-S", "--seats <SEATS>", "Number of available seats. If seat is already reserved, it doesn't count") do |v| options[:seats] = v; end
   opts.on("-t", "--transfert-request", "Make money transfert request") do |v| options[:transfer] = v; end
-  opts.on("-T", "--tripdate <TRIPDATE>", "Trip date and hour") do |v| options[:date] = v; end
+  opts.on("-T", "--tripdate <TRIPDATE>", "Trip date and hour") do |v| options[:trip] = v; end
   opts.on("-R", "--reason <REASON>", "Reason why you didn't accept this passenger on the trip. Use --reason=list to get available reasons") do |v| options[:reason] = v; end
   opts.on("-r", "--comment <comment>", "Comment on why you didn't accept this passenger on the trip") do |v| options[:comment] = v; end
   opts.on("-u", "--user user", "Validate a trip with this guy") do |v| options[:user] = v; end
   opts.on("-V", "--verbose", "Run verbosely") do |v| options[:verbose] = v; end
+  opts.on("-x", "--duplicate <trip date and hour>", "Trip you want to duplicate ex: 2015/12/21 à 6h") do |v| options[:duplicate] = v; end
   opts.on("-D", "--debug", "For debug (run in proxy 127.0.0.1:8080)") do |v| options[:debug] = v; end
   opts.on_tail("-h", "--help", "Show this help message") do puts opts; exit 0; end
   opts.on_tail("Configuration sample (#{ENV['HOME']}/.blablacar.rc):")
@@ -159,7 +160,7 @@ if options[:refuse]
   if not options[:user]
     STDERR.write("Need -u <username> argument")
   end
-  if not options[:date]
+  if not options[:trip]
     STDERR.write("Need -T <tripdate> argument")
   end
   if not options[:reason]
@@ -174,7 +175,7 @@ if options[:refuse]
   end
   blabla.notifications.map{|notif|
     next if not notif.class == AcceptationNotification
-    if notif.refuse(options[:user], options[:date], options[:reason], options[:comment])
+    if notif.refuse(options[:user], options[:trip], options[:reason], options[:comment])
       puts "[+] Refused"
     else
       puts "[-] Failed"
@@ -186,7 +187,7 @@ if options[:acceptation]
   if not options[:user]
     STDERR.write("Need -u <username> argument")
   end
-  if not options[:date]
+  if not options[:trip]
     STDERR.write("Need -T <tripdate> argument")
   end
   if not blabla.notifications?
@@ -195,7 +196,7 @@ if options[:acceptation]
   end
   blabla.notifications.map{|notif|
     next if not notif.class == AcceptationNotification
-    if notif.accept(options[:user], options[:date])
+    if notif.accept(options[:user], options[:trip])
       puts "[+] Accepted"
     else
       puts "[-] Failed"
@@ -332,15 +333,25 @@ if options[:list]
   end
 end
 if options[:seats]
-  if not options[:date]
+  if not options[:trip]
     STDERR.write("Need to pass --trip <trip's date and hours> and --seats <seat number>")
+    exit 0
   end
-  if blabla.update_seat(options[:date], options[:seats])
+  if blabla.update_seat(options[:trip], options[:seats])
     puts "OK"
   else
     puts "Failed to set seat for this trip"
   end
 end
-
-#blabla.duplicate("2015/12/08 à 6h", "2015/12/17 à 6h")
-#blabla.check_trip_published
+if options[:duplicate]
+  if not options[:trip]
+    STDERR.write("Need to pass --trip <trip's date and hours> you want create")
+    exit 0
+  end
+  blabla.duplicate(options[:duplicate], options[:trip])
+  if blabla.check_trip_published()
+    puts "[+] Trip duplicated"
+  else
+    puts "[!] Trip cannot be duplicated"
+  end
+end

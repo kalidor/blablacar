@@ -1,14 +1,15 @@
 Since there is no public API for intreract with your account on Blablacar, I did something to do so.
 
 Here is what it works:
-+ list planned trip with passengers (tel, note, age, etc.)
-+ respond to a public question
-+ enter trip validation code
-+ enter trip passenger opinion
-+ request money transfer
-+ check money transfer status
-+ get current user opinions
-+ Duplicate passed or planned trip
++ List planned trip with passengers (tel, note, age, etc.)
++ Respond to a public question
++ Enter trip validation code
++ Enter trip passenger opinion
++ Request money transfer
++ Check money transfer status
++ Get current user opinions
++ Duplicate passed or planned trip (Please use YYYY/MM/DD)
++ Update number of seats for a trip (Please use YYYY/MM/DD)
 
 Show notifications:
 ```bash
@@ -72,4 +73,11 @@ Ask for transfert money:
 [11:00 ~/Codes/blablacar]% ./blablacar.rb -t
 [+] Authenticated
 Transfer successfully requested
+```
+
+Update seat for a trip (set up 2 seats for this trip):
+```
+[11:00 ~/Codes/blablacar]% ./blablacar.rb -T "2015/12/14" -S 2
+[+] Authenticated
+OK
 ```

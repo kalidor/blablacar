@@ -95,7 +95,7 @@ $duplicate_inactive_trip_offers = {
 
 $check_publication = {
   :method => Net::HTTP::Get,
-  :url => "/publication/processing",
+  :url => "/publication/_check",
 }
 
 $publication_processed = {
@@ -1129,16 +1129,27 @@ class Blablacar
     if res.code != "200"
       raise DuplicateTripError, "HTTP code should be 302 after [step 4 processing]"
     end
-    return true
   end
-  
+
   def check_trip_published
     req = setup_http_request($check_publication, @cookie)
-    res = @http.request(req)
+    puts "Waiting 1 seconde before checking if trip is published"
+    sleep(1)
+    while true
+      res = @http.request(req)
+      res.each_header do |k, v|
+        puts "#{k}: #{v}\n"
+      end
+      puts res.body[0..1000]
+      if gets.chomp == "q"
+        break
+      end
+    end
     if res.code != "200"
       raise CheckPublishedTripError, "HTTP code should be 200 here [step 1 getting status]"
     end
     # should be JSON data like {"published":true,"encrypted_offer_id":"<sort of hash here>"}
+    puts res.body
     jres = JSON.parse(res.body)
     req = setup_http_request($publication_processed, @cookie, {:arg => [jres['encrypted_offer_id']]})
     res = @http.request(req)
