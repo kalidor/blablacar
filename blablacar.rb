@@ -243,9 +243,15 @@ if options[:avis]
     STDERR.write("User not found in notification")
     exit 0
   end
-  if blabla.notifications[i].instance_of?(AvisNotification)
-    puts blabla.notifications[i].desc
-    if blabla.notifications[i].send(s, options[:note], options[:avis])
+  notif = blabla.notifications.map{|notif|
+    if notif.desc.include?("avis") and notif.user.include?(options[:user])
+      notif
+    end
+  }
+  notif = notif.delete_if{|c| c == nil}.first
+  if notif.instance_of?(AvisNotification)
+    puts notif.desc
+    if notif.send(s, options[:note], options[:avis])
       puts "Opinion sent"
     end
   end
