@@ -8,7 +8,7 @@ Here is what it works:
 + Request money transfer
 + Check money transfer status
 + Get current user opinions
-+ Duplicate passed or planned trip (Please use YYYY/MM/DD)
++ Duplicate passed or planned trip (Please use YYYY/MM/DD) (error are displayed but it works, still working on it)
 + Update number of seats for a trip (Please use YYYY/MM/DD)
 
 Show notifications:
@@ -78,6 +78,13 @@ Transfer successfully requested
 Update seat for a trip (set up 2 seats for this trip):
 ```
 [11:00 ~/Codes/blablacar]% ./blablacar.rb -T "2015/12/14" -S 2
+[+] Authenticated
+OK
+```
+
+Duplicate trip:
+```
+[11:00 ~/Codes/blablacar]% ./blablacar.rb --duplicate "2015/12/12 à 6h" -T "2015/12/14 à 6h"
 [+] Authenticated
 OK
 ```
