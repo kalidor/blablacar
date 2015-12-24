@@ -285,10 +285,13 @@ def setup_http_request(obj, cookie=nil, args={})
   req
 end
 
-class AuthenticationFailed < StandardError
+class ValidateTripError < StandardError
 end
 
-class SendReponseMessageFailed < StandardError
+class AuthenticationError < StandardError
+end
+
+class SendReponseMessageError < StandardError
 end
 
 class AcceptationError < StandardError
@@ -427,6 +430,9 @@ class ValidationNotification < Notification
     get_form_confirm_req = setup_http_request($dashboard, @cookie,{:url=>loc})
     res = @http.request(get_form_confirm_req)
     body = find_user_need_confirm(res.body.force_encoding('utf-8'))
+    if not body
+      raise ValidateTripError, "User not found"
+    end
     form_url = body.scan(/<form method="post" action="(\/seat-driver[^"]*)">/).flatten.first
     token = body.scan(/name="confirm_booking\[_token\]" value="([^"]*)" \/>/).flatten.first
     confirm_req = setup_http_request($trip_confirmation, @cookie, {:url => form_url, :arg => [code, token]})
@@ -685,7 +691,7 @@ class Blablacar
     dashboard_req = setup_http_request($dashboard, @cookie)
     res = @http.request(dashboard_req)
     if res.code=='400' or res['location'] == "https://www.blablacar.fr/identification"
-      raise AuthenticationFailed, "Can't get logged in"
+      raise AuthenticationError, "Can't get logged in"
     end
     res.body.force_encoding('utf-8')
   end
@@ -889,7 +895,7 @@ class Blablacar
       }
       return false
     end
-    raise SendReponseMessageFailed, "Cannot received expected 302 code..."
+    raise SendReponseMessageError, "Cannot received expected 302 code..."
   end
 
   # body: current HTML code
@@ -1040,7 +1046,7 @@ class Blablacar
     begin
       @dashboard = get_dashboard
       save_cookie(@cookie)
-    rescue AuthenticationFailed
+    rescue AuthenticationError
       vputs "Cookie no more valid. Get a new one"
       @cookie = nil
       authentication()
