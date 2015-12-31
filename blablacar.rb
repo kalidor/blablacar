@@ -55,6 +55,7 @@ if options.length == 0
   exit 0
 end
 
+# Add method to the original String class
 class String
   def to_boolean
     case self
@@ -196,10 +197,12 @@ if options[:acceptation]
   end
   blabla.notifications.map{|notif|
     next if not notif.class == AcceptationNotification
-    if notif.accept(options[:user], options[:trip])
-      puts "[+] Accepted"
-    else
-      puts "[-] Failed"
+    if options[:user] == notif.user
+      if notif.accept()
+        puts "[+] Accepted"
+      else
+        puts "[-] Failed"
+      end
     end
   }
 end

@@ -11,185 +11,14 @@ require 'yaml'
 require 'time'
 $LOAD_PATH.unshift(File.expand_path(File.dirname(__FILE__)))
 require 'helpers'
+require 'consts'
+require 'requests'
+require 'errors'
 $CONF = nil
-DAYS = {
-  "Monday" => "Lundi",
-  "Tuesday" => "Mardi",
-  "Wednesday" => "Mercredi",
-  "Thursday" => "Jeudi",
-  "Friday" => "Vendredi",
-  "Saturday" => "Samedi",
-  "Sunday" => "Dimanche"
-}
-MONTHS = {
-  "Janvier" => "January",
-  "Février" => "February",
-  "Mars" => "March",
-  "Avril" => "April",
-  "Mai" => "May",
-  "Juin" => "June",
-  "Juillet" => "July",
-  "Août" => "August",
-  "Septembre" => "September",
-  "Octobre" => "October",
-  "Novembre" => "November",
-  "Décembre" => "December"
-}
-REASON_REFUSE = {
-  "refuse_no_longer_do_trip"=>
-  "J'ai un imprévu, je n'effectue plus le voyage",
-  "refuse_other"=>"Autre",
-  "refuse_wanted_to_ask_question"=>
-    "J'ai besoin de poser une question à ce membre avant d'accepter",
-  "refuse_would_feel_uncomfortable"=>
-    "Je ne me sentirais pas à l'aise en voyageant avec ce membre (ex: pas d'avis sur le profil)",
-  "refuse_psgr_booked_too_short_distance"=>
-    "Ce passager veut réserver pour une distance trop courte",
-  "refuse_trip_full"=>"Mon trajet est complet",
-  "refuse_modify_tripoffer"=>"Je dois modifier l'annonce",
-  "refuse_psgr_profile_incomplete"=>
-    "Le profil de ce membre est incomplet (pas de photo, mini bio, etc.)"
-}
 
-$tracking = {
-  :method => Net::HTTP::Post,
-  :url => "/tracking/cmkt",
-  :data => "location=https://www.blablacar.fr/&originalData[site_language]=FR&originalData[media]=web&originalData[diplayed_currency]=EUR&originalData[current_route]=blablacar_security_security_login",
-  :header => ["Content-Type" , "application/x-www-form-urlencoded; charset=UTF-8"],
-}
-$ident = {
-  :method => Net::HTTP::Post,
-  :url => "/login_check",
-  :data => "_username=%{user}&_password=%{pass}&_submit=",
-  :header => ["Content-Type", "application/x-www-form-urlencoded"],
-}
-
-$dashboard = {
-  :method => Net::HTTP::Get,
-  :url => "/dashboard",
-}
-
-$active_trip_offers = {
-  :method => Net::HTTP::Get,
-  :url => "/dashboard/trip-offers/active?page=%s",
-}
-
-$inactive_trip_offers = {
-  :method => Net::HTTP::Get,
-  :url => "/dashboard/trip-offers/inactive?page=%s",
-}
-
-$duplicate_active_trip_offers = {
-  :method => Net::HTTP::Post,
-  :url => "/dashboard/trip-offers/active",
-  :header => ["Content-Type", "application/x-www-form-urlencoded"],
-  :referer => "https://www.blablacar.fr/dashboard/trip-offers/active"
-}
-
-$duplicate_inactive_trip_offers = {
-  :method => Net::HTTP::Post,
-  :url => "/dashboard/trip-offers/inactive",
-  :header => ["Content-Type", "application/x-www-form-urlencoded", "Pragma", "no-cache", "upgrade-insecure-requests", "1"],
-  :referer => "https://www.blablacar.fr/dashboard/trip-offers/inactive"
-}
-
-$check_publication = {
-  :method => Net::HTTP::Get,
-  :url => "/publication/_check",
-}
-
-$publication_processed = {
-  :method => Net::HTTP::Get,
-  :url => "/publication/processed/%s"
-}
-
-$trip = {
-  :method => Net::HTTP::Get,
-  :url => "/dashboard/trip-offer/%s/passengers",
-}
-
-$trip_confirmation = {
-  :method => Net::HTTP::Post,
-  :url => "%s",
-  :data => "confirm_booking[code]=%s&confirm_booking[_token]=%s",
-  :header => ["Content-Type", "application/x-www-form-urlencoded"]
-}
-
-$messages = {
-  :method => Net::HTTP::Get,
-  :url => "/questions-answers",
-}
-
-$private_messages = {
-  :method => Net::HTTP::Get,
-  :url => "/messages/received",
-}
-
-$respond_to_message = {
-  :method => Net::HTTP::Post,
-  :url => "",
-  :data => "message[content]=%s&message[_token]=%s",
-  :header => ["Content-Type", "application/x-www-form-urlencoded"]
-}
-
-$money = {
-  :method => Net::HTTP::Get,
-  :url => "/dashboard/account/money-available",
-}
-
-$money_transfer = {
-  :method => Net::HTTP::Get,
-  :url => "/dashboard/ask-transfer",
-}
-
-$money_transfer_status = {
-  :method => Net::HTTP::Get,
-  :url => "/dashboard/account/archived-transfer",
-}
-
-$search_req = {
-  :method => Net::HTTP::Get,
-  :url => "/search_xhr?fn=%s&fcc=FR&tn=%s&tcc=FR&db=%s&sort=trip_date&order=asc&limit=50&page=1",
-}
-
-$proposer_req = {
-  :method => Net::HTTP::Get,
-  :url => "/proposer/1",
-}
-
-$avis_req_get = {
-  :method => Net::HTTP::Get,
-  :url => "",
-}
-$avis_req_post = {
-  :method => Net::HTTP::Post,
-  :url => "",
-  :data => "rating[role]=%s&rating[global_rating]=%s&rating[comment]=%s&rating[driving_rating_optional]=1&rating[_token]=%s",
-  :header => ["Content-Type", "application/x-www-form-urlencoded"]
-}
-$avis_req_post_confirm = {
-  :method => Net::HTTP::Post,
-  :url => "",
-  :data => "rating_preview[confirm]=&rating_preview[_token]=%s",
-  :header => ["Content-Type", "application/x-www-form-urlencoded"]
-}
-$rating_received = {
-  :method => Net::HTTP::Get,
-  :url => "/dashboard/ratings/received?page=%s",
-}
-$refuse_req = {
-  :method => Net::HTTP::Post,
-  :url => "",
-  :data => "drvr_refuse_booking[_token]=%sdrvr_refuse_booking[reason]=%s&drvr_refuse_booking[comment]=%s&drvr_refuse_booking[agree]", # dernier peut être pas obligatoire ?
-  :header => ["Content-Type", "application/x-www-form-urlencoded"]
-}
-$update_seat_req = {
-  :method => Net::HTTP::Post,
-  :url => "",
-  :data => "count=%d",
-  :header => ["Content-Type", "application/x-www-form-urlencoded; charset=UTF-8"]
-}
-
+# Save authenticated cookie on disk
+#
+# @param cookie [String] Cookie's content
 def save_cookie(cookie)
   dputs __method__.to_s
   File.open($CONF['cookie'], "w") do |fc|
@@ -197,6 +26,9 @@ def save_cookie(cookie)
   end
 end
 
+# Check if there is cookie on disk
+#
+# @return [Boolean] true if success false if not
 def local_cookie?
   if File.exist?($CONF['cookie'])
     return true
@@ -204,11 +36,10 @@ def local_cookie?
   false
 end
 
-def look_for_day(day)
-  diff = DAYS.keys.index(DAYS.find{|k,v| v==day}.first) - DAYS.keys.index(Time.now.strftime("%A"))
-  return diff.abs
-end
-
+# Parse given time into Time object (specially when 'Demain' is used)
+#
+# @param tt [String] time of a trip generally
+# @return [Time] Parsed time
 def parse_time(tt)
   tt = tt.force_encoding('utf-8')
   MONTHS.map{|k,v|
@@ -223,7 +54,12 @@ def parse_time(tt)
   return t
 end
 
-# Set up the HTTP request object to avoir duplicated code
+# Set up the HTTP request object to avoid duplicated code
+#
+# @param obj [Variable] Variable containing Net::HTTP object
+# @param cookie [String] Cookie's content to use for this request
+# @param args [Hash] Data to add to the request (to the url or in POST request)
+# @return [Net] The complete Net::HTTP object
 def setup_http_request(obj, cookie=nil, args={})
   if args.has_key?(:url)
     if args[:url].scan(/%[s|d]/).length > 0
@@ -285,27 +121,6 @@ def setup_http_request(obj, cookie=nil, args={})
   req
 end
 
-class ValidateTripError < StandardError
-end
-
-class AuthenticationError < StandardError
-end
-
-class SendReponseMessageError < StandardError
-end
-
-class AcceptationError < StandardError
-end
-
-class UpdateSeatError < StandardError
-end
-
-class DuplicateTripError < StandardError
-end
-
-class CheckPublishedTripError < StandardError
-end
-
 # Generic Notification class
 # All notification will heritated from it
 class Notification
@@ -323,10 +138,16 @@ end
 # When you have to accept a passenger for a trip
 class AcceptationNotification < Notification
   attr_reader :user, :end_date, :trip, :trip_date
+  # Get the name of the user who get the reservation
+  #
+  # @param data [String] HTTP response body 
   def prepare(data)
     @user = data.first.scan(/Demande de réservation de (.*)/).flatten.first
     parse()
   end
+
+  # Parse the HTTP response body to get some links like cancellation, acceptation, etc.
+  #
   def parse
     get_req = setup_http_request($dashboard, @cookie,{:url=>@url})
     res = @http.request(get_req)
@@ -361,7 +182,9 @@ class AcceptationNotification < Notification
     end
   end
 
-  def accept(user, date)
+  # Accept the user for a trip
+  #
+  def accept
     accept_req = setup_http_request($dashboard, @cookie,{:url=>@accept_url})
     res = @http.request(accept_req)
     if res.code.to_i == 302
@@ -373,7 +196,12 @@ class AcceptationNotification < Notification
     return false
   end
 
-  def refuse(user, date, reason, comment)
+  # Refuse the user for a trip
+  #
+  # @param reason [String] Reason why you refuse the user (between defined reasons)
+  # @param comment [String] More precise comment (free)
+  # @return [Boolean] True if success or Else if failed
+  def refuse(reason, comment)
     accept_req = setup_http_request($dashboard, @cookie,{:url=>@refuse_url, :arg => [@token, reason, comment]})
     res = @http.request(accept_req)
     if res.code.to_i == 302
@@ -390,10 +218,17 @@ end
 # When you have to confirm the trip with this person
 class ValidationNotification < Notification
   attr_reader :user
+  # Save the user who made the trip with us
+  #
+  # @param data [String] HTTP response body 
   def prepare(data)
     @user = data.first.scan(/renseignez le code passager de (.*) pour recevoir/).flatten.first
   end
 
+  # Get the list of all user we drove with
+  #
+  # @param data [String] HTTP response body
+  # @return [String] Stripped HTTP response body
   def find_user_need_confirm(data)
     m = data.scan(/Vous avez voyag/)
     while t = m.shift do
@@ -406,6 +241,10 @@ class ValidationNotification < Notification
     end
   end
 
+  # Confirm the validation
+  #
+  # @param loc [String] URL
+  # @return [Boolean] Return true if the confirmation includes the username
   def get_validation_confirmation(loc)
     get_form_confirm_req = setup_http_request($dashboard, @cookie,{:url=>loc})
     res = @http.request(get_form_confirm_req)
@@ -414,10 +253,10 @@ class ValidationNotification < Notification
     return confirmed.include?(@user)
   end
 
-  # Confirm
-  # if return true => success
-  # if return false => wrong validation code
-  # if return nil => the post request fails somewhere
+  # Validate the trip
+  #
+  # @param code [String] Validation code given by the passenger after the trip
+  # @return [Boolean] true if succeed, false if validation code if bad, nil if the request failed
   def confirm(code)
     dputs __method__.to_s
     get_confirm_req = setup_http_request($dashboard, @cookie, {:url=>@url})
@@ -462,7 +301,12 @@ class Virement < Notification
     @current
   end
 
-  # Get money_ transfer status
+  # Get money transfer status
+  #
+  # @return [String] Who
+  # @return [String] Seats taken
+  # @return [String] Trip
+  # @return [String] Transfer status
   def status?
     dputs __method__.to_s
     money_req = setup_http_request($money_transfer_status, @cookie)
@@ -479,7 +323,9 @@ class Virement < Notification
     data
   end
 
-  # Ask for the money transfer on my account
+  # Request the money transfer on my account
+  #
+  # @return [Boolean] true if succeed, false either
   def transfer
     dputs __method__.to_s
     money_req = setup_http_request($money_transfer, @cookie)
@@ -492,6 +338,8 @@ class Virement < Notification
   end
 
 private
+  # Get the total amount of money already transfer and the current amount available
+  #
   def total_and_current
     dputs __method__.to_s
     money_req = setup_http_request($money, @cookie)
@@ -506,9 +354,21 @@ end
 # When you have to send a comment about a person, if he/she was nice, etc.
 class AvisNotification < Notification
   attr_reader :user
+
+  # Get the name of the person who made a trip with us
+  #
+  # @param data [String] HTTP response body
   def prepare(data)
     @user = data.first.scan(/laissez un avis . votre passager (.*)/).flatten.first
   end
+
+  # Generic method to send an avis about the driver/passenger
+  #
+  # @param status [String] P for passenger, D for Driver
+  # @param note [String] The note we gave him (recommendation)
+  # @param comment [String] The comment we want to left him
+  # @param driver [Boolean] # to complete, how this driver drives ?
+  # @return [Boolean] true if everything was fine, false either. nil if something was wrong.
   def send(status, note, comment, driver=nil)
     # click call_to_action
     req = setup_http_request($avis_req_get, @cookie, {:url => @url})
@@ -548,22 +408,45 @@ class AvisNotification < Notification
       return false
     end
   end
+
+  # Send an avis about the passenger
+  #
+  # @param status [String] P for passenger, D for Driver
+  # @param note [String] The note we gave him (recommendation)
+  # @param avis [String] The comment we want to left about how he was during the trip
+  # @return [Boolean] true if everything was fine, false either. nil if something was wrong.
   def send_as_driver(status, note, avis)
     send(status, note, avis)
   end
+  
+  # Send an avis about the driver
+  #
+  # @param status [String] P for passenger, D for Driver
+  # @param note [String] The note we gave him (recommendation)
+  # @param drive [String] The comment we want to left about how he drove
+  # @param avis [String] The comment we want to left about how he was during the trip
+  # @return [Boolean] true if everything was fine, false either. nil if something was wrong.
   def send_as_passenger(status, note, drive, avis)
     send(status, note, avis, drive)
   end
 end
 
+# Main class, everything is in here \o/
 class Blablacar
   attr_reader :cookie, :messages, :notifications, :virement
+  # Initialize the Blablacar class
+  #
+  # @param verbose [Boolean] Activate the verbose mode (need improvement)
+  # @param debug [Boolean] Activate the debug mode (proxify all requests through 127.0.0.1:8080)
   def initialize(verbose=nil, debug=nil)
     url = URI.parse("https://www.blablacar.fr/")
     if debug
       proxy = Net::HTTP::Proxy("127.0.0.1", 8080)
-      @http = proxy.start(url.host, url.port, :use_ssl => true,
-                          :verify_mode => OpenSSL::SSL::VERIFY_NONE)
+      @http = proxy.start(
+                  url.host,
+                  url.port,
+                  :use_ssl => true,
+                  :verify_mode => OpenSSL::SSL::VERIFY_NONE)
     else
       @http = Net::HTTP.new(url.host, url.port)
       @http.use_ssl = true
@@ -583,19 +466,18 @@ class Blablacar
   end
 
   def messages?
-    return @messages
+    @messages
   end
 
   def notifications?
-    return true if @notifications.length > 0
-    return false
+    return (@notifications.length > 0) ? true : false
   end
 
-  # return array : ["msg", "URL to request"]
   def notifications
      @notifications
   end
 
+  # Update current cookie
   def update_cookie(data)
     if data['set-cookie']
       # don't by shy, let's take every cookie...
@@ -610,7 +492,9 @@ class Blablacar
     end
   end
 
-  # Parse header in order to get the cookie
+  # Parse header in order to get the cookie and save it for the next futures requests
+  #
+  # @param data [Net::HTTPResponse] Net::HTTPResponse object containing HTTP headers
   def get_cookie(data)
     if data['set-cookie']
       # don't by shy, let's take every cookie...
@@ -633,7 +517,7 @@ class Blablacar
     end
   end
 
-  # (Step1) Get tracking cookie don't know why it's so important
+  # (Authentication Step1) Get tracking cookie don't know why it's so important
   def get_cookie_tracking
     dputs __method__.to_s
     track_req = setup_http_request($tracking, @cookie)
@@ -641,7 +525,7 @@ class Blablacar
     get_cookie(res)
   end
 
-  # (Step2) Post id/passwd to the send_credentials web page
+  # (Authentication Step2) Post id/passwd to the send_credentials web page
   def send_credentials
     dputs __method__.to_s
     $ident[:data] = $ident[:data] % {:user => $CONF['user'], :pass => $CONF['pass']}
@@ -650,6 +534,7 @@ class Blablacar
     get_cookie(res)
   end
 
+  # Check the configuration file and set up constants
   def check_conf
     ['user', 'pass', 'cookie'].map{|i|
       if not $CONF.keys.include?(i)
@@ -663,6 +548,9 @@ class Blablacar
     }
   end
 
+  # Load the configuration file into $CONF constant
+  #
+  # @param file [String] Path to the configuration file
   def load_conf(file=nil)
     f = file || File.join(ENV['HOME'], '.blablacar.rc')
     begin
@@ -685,8 +573,7 @@ class Blablacar
     (aputs "Can't get Cookie send_credentials"; exit 2) if not @cookie
   end
 
-
-  # Step 3: Access to the dashboard
+  # (Authentication Step 3) Try to access to the dashboard
   def get_dashboard
     dashboard_req = setup_http_request($dashboard, @cookie)
     res = @http.request(dashboard_req)
@@ -696,6 +583,10 @@ class Blablacar
     res.body.force_encoding('utf-8')
   end
 
+  # List all trip we created
+  #
+  # @param body [String] Net::HTTPResponse body
+  # @return [Hash] Hash with those keys: :trip, :stats, :date, :duplicate
   def list_trip_offers(body)
     trips = {}
     ts = body.scan(/"\/dashboard\/trip-offer\/(\d*)\/passengers" class=/).flatten
@@ -709,6 +600,9 @@ class Blablacar
   end
 
   # Get all trip's offers id
+  #
+  # @param active [Boolean] If true get only future trips, if not, get old passed trip too
+  # @return (see #list_trip_offers)
   def get_trip_offers(active=true)
     dputs __method__.to_s
     if active
@@ -717,7 +611,7 @@ class Blablacar
       trip_offer_req = setup_http_request($inactive_trip_offers, @cookie, {:arg => [1]})
     end
     res = @http.request(trip_offer_req)
-    update_cookie(res)
+    #update_cookie(res)
     trips = {}
     trips = list_trip_offers(CGI.unescapeHTML(res.body.force_encoding("utf-8")))
     pages = res.body.scan(/<a href="\/dashboard\/trip-offers\/active\?page=(\d*)/).flatten.uniq
@@ -730,14 +624,23 @@ class Blablacar
   end
 
   # Get all trip's offers id
+  #
+  # @return (see #get_trip_offers)
   def get_active_trip_offers
     get_trip_offers(active=true)
   end
 
+  # Get all trip's offers id
+  #
+  # @return (see #get_trip_offers)
   def get_inactive_trip_offers
     get_trip_offers(active=false)
   end
 
+  # Parse trip Web page in order to extract every needed information
+  #
+  # @param data [String] Net::HTTPResponse body
+  # @return [Hash] Hash with those keys: :trip, :when, :seat_url, :seats, :who, :note, :phone, :seat_taken, :status, :actual_trip
   def parse_trip(data)
     res = CGI.unescapeHTML(data.force_encoding('utf-8'))
     t={}
@@ -762,7 +665,9 @@ class Blablacar
     t
   end
 
-  # Display all passengers for all the future trips
+  # Get all passengers for all the future trips
+  #
+  # @return (see #parse_trip)
   def get_planned_passengers
     dputs __method__.to_s
     _trips = get_active_trip_offers()
@@ -787,6 +692,10 @@ class Blablacar
   end
 
   # Get private messages from link
+  # @todo Maybe could be merged with get_public_conversations
+  # @param url [String] URL to request
+  # @todo -> check [Boolean] ? Get our response too ?
+  # @return [Array] Array of Hash. Hash containing those keys: :msgs_user, :url, :token, :trip_date, :trip, :msgs
   def get_private_conversations(url, check=nil)
     dputs __method__.to_s
     messages_req = setup_http_request($messages, @cookie, {:url => url})
@@ -830,6 +739,9 @@ class Blablacar
   end
 
   # Get public messages from link
+  # @todo Maybe could be merged with get_private_conversations
+  # @param (see #get_private_conversations)
+  # @return (see #get_private_conversations)
   def get_public_conversations(url, check=nil)
     dputs __method__.to_s
     messages_req = setup_http_request($messages, @cookie, {:url => url})
@@ -878,6 +790,12 @@ class Blablacar
     ret
   end
 
+  # Reponse back to a question
+  #
+  # @param url [String] URL to response to
+  # @param token [String] Uniq token to use in order to response to the question
+  # @param resp [String] The response message
+  # @return [Boolean] true if succeed, false if failed. Could raise on error if something wrong on the network
   def respond_to_question(url, token, resp)
     dputs __method__.to_s
     messages_req = setup_http_request($respond_to_message, @cookie, {:url => url, :arg => [resp, token]})
@@ -898,9 +816,12 @@ class Blablacar
     raise SendReponseMessageError, "Cannot received expected 302 code..."
   end
 
-  # body: current HTML code
-  # _private: look for private message
-  # all: look for every messages, not only unread messages
+  # Parse the message web page to get unread message
+  #
+  # @param body [String] Net::HTTPResponse body
+  # @param _private [Boolean] If true, look for private message
+  # @param all [Boolean] If true, look for every messages, not only unread messages
+  # @return [Array] Array of URL
   def messages_parsing(body, _private=nil, all=nil)
     term = "/trajet-"
     term = "\\/messages\\/private" if _private
@@ -918,6 +839,8 @@ class Blablacar
 
   # Get public/private message link
   #
+  # @param all [Boolean] If true get our response too 
+  # @return [Hash] Hash of Array. Keys are :public, :private. Each contains an array of Hash (see #get_private_conversations)
   def get_messages_link_and_content(all=nil)
     dputs __method__.to_s
     urls = {:public => [], :private => []}
@@ -946,15 +869,24 @@ class Blablacar
     return msgs
   end
 
+  # Get ony new messages
+  #
+  # @return (see #get_messages_link_and_content)
   def get_new_messages
     get_messages_link_and_content
   end
 
-  # TODO ?
+  # @todo try it, test it, commit it (Get all messages (unread or not))
+  #
+  # @return (see #get_messages_link_and_content)
   def get_all_messages
     get_messages_link_and_content(true)
   end
 
+  # Get opinion people left us
+  #
+  # @param page [FixNum] Target page
+  # @return [Array] Array of Array
   def get_opinion(page=1)
     if page.empty?
       page=1
@@ -966,6 +898,12 @@ class Blablacar
     ret
   end
 
+  # Search for a trip # Need work on it...
+  #
+  # @param city_start [String] Where do you wanna to get pickup ?
+  # @param city_end [String] Where do you wanna go ?
+  # @param date [String] When do you wanna leave ?
+  # @return [Array] Array of array
   def search_trip(city_start, city_end, date)
     dputs __method__.to_s
     req = setup_http_request($search_req, @cookie, {:arg => [city_start, city_end, date]})
@@ -998,6 +936,8 @@ class Blablacar
     results
   end
 
+  # Parse the dashboard web page
+  #
   def parse_dashboard
     dputs __method__.to_s
     # Don't need to parse the all page to get message received...
@@ -1015,6 +955,10 @@ class Blablacar
     end
   end
 
+  # Get the notifications
+  #
+  # @param data [String] Net::HTTPResponse body
+  # @return [Notification] Could be ValidationNotification, AvisNotification, AcceptationNotification or nil
   def parse_notifications(data)
     if data.first.include?("renseignez le code passager de")
       return ValidationNotification.new(@http, @cookie, data)
@@ -1032,6 +976,8 @@ class Blablacar
 
 
   # Main function
+  #
+  # @param conf [String] This is the configuration file .rc
   def run(conf=nil)
     load_conf(conf)
     check_conf()
@@ -1055,6 +1001,11 @@ class Blablacar
     @authenticated = true
   end
 
+  # Update the total seats for a trip
+  #
+  # @param trip_date [Time] The trip you wanna update
+  # @param seat [FixNum] The number of seats in the car
+  # @return [Boolean] If succeed true, false either
   def update_seat(trip_date, seat)
     dputs __method__.to_s
     trips = get_trip_offers()
@@ -1084,6 +1035,12 @@ class Blablacar
     end
   end
 
+  # Duplicate a trip (city start, city end, hour and description)
+  #
+  # @param date_src [Time] The trip you wanna duplicate
+  # @param date_dst_departure [Time] The date you wanna set up the trip
+  # @param date_dst_return [Time] The date of the return # need working on it
+  # @return [Boolean] truf if succeed, else raise DuplicateTripError
   def duplicate(date_src, date_dst_departure, date_dst_return=nil)
     match = nil
     indx = nil
@@ -1135,8 +1092,11 @@ class Blablacar
     if res.code != "200"
       raise DuplicateTripError, "HTTP code should be 302 after [step 4 processing]"
     end
+    return true
   end
 
+  # Check if the previous duplicated trip is published
+  # @return [Boolean] true if succeed, false either
   def check_trip_published
     req = setup_http_request($check_publication, @cookie)
     puts "Waiting 1 seconde before checking if trip is published"
