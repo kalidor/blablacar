@@ -691,19 +691,28 @@ class Blablacar
     trips
   end
 
-  # Get private messages from link
-  # @todo Maybe could be merged with get_public_conversations
+  # Generic method to get public/private messages from link
   # @param url [String] URL to request
+  # @param kind [String] What kind of messages: 'public' or 'private'
   # @todo -> check [Boolean] ? Get our response too ?
   # @return [Array] Array of Hash. Hash containing those keys: :msgs_user, :url, :token, :trip_date, :trip, :msgs
-  def get_private_conversations(url, check=nil)
+  def get_conversations(url, kind='public', check=nil)
     dputs __method__.to_s
     messages_req = setup_http_request($messages, @cookie, {:url => url})
     res = @http.request(messages_req)
     body = CGI.unescapeHTML(res.body.force_encoding('utf-8').gsub("<br />", ""))
+    if kind == 'public'
+      lastindex = body.index('Questions sur les autres portions du trajet')
+      if lastindex
+        body = body[0..lastindex]
+      end
+      trip_date = body.scan(/<strong class="RideDetails-infoValue">\s*<i class="bbc-icon2-calendar" aria-hidden="true"><\/i>\s*<span>\s*(.*)\s*/).flatten.first
+    else # 'private'
+      trip = body.scan(/<a href="\/trajet-[^"]*" rel="nofollow">\s*(.*)\s*<\/a>/).flatten.first
+      trip, trip_date = trip.split(",")
+    end
+    # looking for uniq value for each discussion (url to respond to)
     urls = body.scan(/<form id="qa"\s*class="[^"]*"\s*action="(\/messages\/respond\/[^"]*)"\s*method="POST"/).flatten
-    trip = body.scan(/<a href="\/trajet-[^"]*" rel="nofollow">\s*(.*)\s*<\/a>/).flatten.first # PRIVATE
-    trip, trip_date = trip.split(",") # PRIVATE
     ret = Array.new
     u = 0
     urls.map{|t|
@@ -711,9 +720,17 @@ class Blablacar
       body_ = body[u..ind]
       u = ind
       token = body_.scan(/message\[_token\]" value="([^"]*)" \/>/).flatten.first
+      if kind == 'public'
+        users = body_.scan(/<a href="\/membre\/profil\/[^"]*" class="u-(?:darkGray)?(?:blue)?">([^<]*)<\/a>/).flatten
+        msgs = body_.scan(/<\/span><\/span>\)<\/span>\s*<\/h3>\s*<p>([^<]*)<\/p>/).flatten
+        msg_hours = body_.scan(/<time class="Speech-date" datetime="[^"]*">([^<]*)<\/time>/).flatten
+        trips = body_.scan(/<span class="Ridename RideName--small">\(<span class="RideName-mainTrip"><span class="RideName-location RideName-location--arrowAfter">(.*)<\/span><span class="RideName-location">(.*)<\/span><\/span>\)/).flatten
+        trip = (0..trips.length-1).step(2).map{|c| "#{trips[c]}->#{trips[c+1]}"}.first
+    else # 'private'
       users = body_.scan(/<h4>\s*<strong>\s*([^:]*) :\s*<\/strong>\s*<\/h4>/).flatten # PRIVATE
       msgs = body_.scan(/<\/h4>\s*<p>"([^"]*)"<\/p>/).flatten # PRIVATE
       msg_hours = body_.scan(/<p class="msg-date clearfix">\s*([^<]*)\s*</).flatten.map{|m| m.strip.chomp} # PRIVATE
+    end
       tmp = {:msg_user => users.first, :url => t, :token => token, :trip_date => trip_date, :trip => trip}
       tmp[:msgs] = []
       0.upto(msgs.length-1).map{|id|
@@ -738,56 +755,20 @@ class Blablacar
     ret
   end
 
+  # Get private messages from link
+  # @param url [String] URL to request
+  # @todo -> check [Boolean] ? Get our response too ?
+  # @return [Array] Array of Hash. Hash containing those keys: :msgs_user, :url, :token, :trip_date, :trip, :msgs
+  def get_private_conversations(url, check=nil)
+    get_conversations(url, 'private', check)
+  end
+
   # Get public messages from link
-  # @todo Maybe could be merged with get_private_conversations
   # @param (see #get_private_conversations)
+  # @todo -> check [Boolean] ? Get our response too ?
   # @return (see #get_private_conversations)
   def get_public_conversations(url, check=nil)
-    dputs __method__.to_s
-    messages_req = setup_http_request($messages, @cookie, {:url => url})
-    res = @http.request(messages_req)
-    body = CGI.unescapeHTML(res.body.force_encoding('utf-8').gsub("<br />", ""))
-    lastindex = body.index('Questions sur les autres portions du trajet')
-    if lastindex
-      body = body[0..lastindex]
-    end
-    # looking for uniq value for each discussion (url to respond to)
-    urls = body.scan(/<form id="qa"\s*class="[^"]*"\s*action="(\/messages\/respond\/[^"]*)"\s*method="POST"/).flatten
-    trip_date = body.scan(/<strong class="RideDetails-infoValue">\s*<i class="bbc-icon2-calendar" aria-hidden="true"><\/i>\s*<span>\s*(.*)\s*/).flatten.first
-    ret = Array.new
-    u = 0
-    urls.map{|t|
-      ind = body.index(t)+2000
-      body_ = body[u..ind]
-      u = ind
-      token = body_.scan(/message\[_token\]" value="([^"]*)" \/>/).flatten.first
-      users = body_.scan(/<a href="\/membre\/profil\/[^"]*" class="u-(?:darkGray)?(?:blue)?">([^<]*)<\/a>/).flatten
-      msgs = body_.scan(/<\/span><\/span>\)<\/span>\s*<\/h3>\s*<p>([^<]*)<\/p>/).flatten
-      msg_hours = body_.scan(/<time class="Speech-date" datetime="[^"]*">([^<]*)<\/time>/).flatten
-      trips = body_.scan(/<span class="Ridename RideName--small">\(<span class="RideName-mainTrip"><span class="RideName-location RideName-location--arrowAfter">(.*)<\/span><span class="RideName-location">(.*)<\/span><\/span>\)/).flatten
-      trip = (0..trips.length-1).step(2).map{|c| "#{trips[c]}->#{trips[c+1]}"}.first
-      tmp = {:msg_user => users.first, :url => t, :token => token, :trip_date => trip_date, :trip => trip}
-      tmp[:msgs] = []
-      0.upto(msgs.length-1).map{|id|
-        if users[id].include?("Greg C")
-          # When I have already responded
-          #  d = "[%s] %s" % [msg_hours[id], msgs[id].split(":").first]
-          #  d.strip!
-          if check
-             m = msgs[id].split(":")[1..-1].join(":")
-            ret << m.strip!
-          end
-        else
-          if not check
-            #ret << {:msg_user => users[id], :msg => {:msg_date => msg_hours[id], :msg => msgs[id].gsub("\r\n", ' ').gsub("\n", " "), :trip => trip, :trip_date => trip_date, :url => t, :token => token}
-            next if msgs[id] == nil
-            tmp[:msgs] << {:msg_date => msg_hours[id], :msg => msgs[id].gsub("\r\n", ' ').gsub("\n", " ")}
-          end
-        end
-      }
-      ret << tmp
-    }
-    ret
+    get_conversations(url, 'public', check)
   end
 
   # Reponse back to a question
@@ -839,7 +820,7 @@ class Blablacar
 
   # Get public/private message link
   #
-  # @param all [Boolean] If true get our response too 
+  # @param all [Boolean] If true get our response too
   # @return [Hash] Hash of Array. Keys are :public, :private. Each contains an array of Hash (see #get_private_conversations)
   def get_messages_link_and_content(all=nil)
     dputs __method__.to_s
@@ -856,7 +837,7 @@ class Blablacar
     until urls.empty?
       k, uu = urls.shift
       next if uu == nil
-      # Set get_public_conversations / get_private_conversations dynamically
+      # Call get_{public,private}_conversations dynamically
       f = self.method("get_#{k.to_s}_conversations")
       uu.map{|u|
         f.call(u).map do |m|
