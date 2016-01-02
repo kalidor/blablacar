@@ -917,6 +917,7 @@ class Blablacar
     #car = res.scan(/Véhicule : <strong>(.*)<\/strong><\/dt>/)
     place = res.scan(/<div class="availability">\s*<strong>(.*)<\/strong>((?: <span>.*<\/span>){0,1})/)
     price = res.scan(/<div class="price price-[^"]+" itemprop="location">\s*<strong>\s*<span>\s*(\d+).*\s*<\/span>/)
+    acceptation = res.scan(/title="Acceptation : ([^"]+)"/)
     url.each_with_index{|u, ind|
       results[ind] = {
         :url => u.first,
@@ -928,7 +929,8 @@ class Blablacar
         :stop => stop[ind].first,
         :car => car[ind].first ==nil ? "no info" : car[ind].first.scan(/hicule : <strong>(.*)<\/strong>/).flatten.first,
         :place => place[ind].first=="Complet" ? "Complet" : "%s disponible(s)"%place[ind].first,
-        :price => "%s €" % price[ind].first
+        :price => "%s €" % price[ind].first,
+        :acceptation => acceptation[ind].first
       }
     }
     results
