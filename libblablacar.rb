@@ -902,7 +902,7 @@ class Blablacar
   # @return [Array] Array of array
   def search_trip(city_start, city_end, date)
     dputs __method__.to_s
-    req = setup_http_request($search_req, @cookie, {:arg => [city_start, city_end, date]})
+    req = setup_http_request($search_req, @cookie, {:url_arg => [city_start, city_end, CGI.escape(date)]})
     res = @http.request(req)
     res=JSON.parse(res.body)['html']['results'].force_encoding('utf-8')
     results = []
@@ -916,6 +916,7 @@ class Blablacar
     car = res.scan(/<dd class="tip" title="Arriv.e">\s*.*\s*<\/dd>\s*<\/dl>\s*((?:<dl class="car-type" [^>]*>\s*<dt>V.hicule : <strong>.*<\/strong><\/dt>)){0,1}/)
     #car = res.scan(/Véhicule : <strong>(.*)<\/strong><\/dt>/)
     place = res.scan(/<div class="availability">\s*<strong>(.*)<\/strong>((?: <span>.*<\/span>){0,1})/)
+    price = res.scan(/<div class="price price-[^"]+" itemprop="location">\s*<strong>\s*<span>\s*(\d+).*\s*<\/span>/)
     url.each_with_index{|u, ind|
       results[ind] = {
         :url => u.first,
@@ -926,7 +927,8 @@ class Blablacar
         :start => start[ind].first,
         :stop => stop[ind].first,
         :car => car[ind].first ==nil ? "no info" : car[ind].first.scan(/hicule : <strong>(.*)<\/strong>/).flatten.first,
-        :place => place[ind].first=="Complet" ? "Complet" : "%s disponible(s)"%place[ind].first
+        :place => place[ind].first=="Complet" ? "Complet" : "%s disponible(s)"%place[ind].first,
+        :price => "%s €" % price[ind].first
       }
     }
     results
