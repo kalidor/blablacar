@@ -1104,16 +1104,11 @@ class Blablacar
     req = setup_http_request($check_publication, @cookie)
     puts "Waiting 1 seconde before checking if trip is published"
     sleep(1)
-    while true
-      res = @http.request(req)
-      res.each_header do |k, v|
-        puts "#{k}: #{v}\n"
-      end
-      puts res.body[0..1000]
-      if gets.chomp == "q"
-        break
-      end
+    res = @http.request(req)
+    res.each_header do |k, v|
+      puts "#{k}: #{v}\n"
     end
+    puts res.body[0..1000]
     if res.code != "200"
       raise CheckPublishedTripError, "HTTP code should be 200 here [step 1 getting status]"
     end
