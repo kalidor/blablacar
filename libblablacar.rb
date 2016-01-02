@@ -63,24 +63,24 @@ end
 def setup_http_request(obj, cookie=nil, args={})
   if args.has_key?(:url)
     if args[:url].scan(/%[s|d]/).length > 0
-      if args[:url].scan(/%[s|d]/).length != args[:arg].length
+      if args[:url].scan(/%[s|d]/).length != args[:url_arg].length
         aputs "URL contains %d '%%s' or '%%d' argument... Fix your code" % args[:url].scan(/%[s|d]/).length
         aputs __callee__
         exit 2
       end
-      req = obj[:method].new(args[:url] % args[:arg])
+      req = obj[:method].new(args[:url] % args[:url_arg])
     else
       req = obj[:method].new(args[:url])
     end
   else
-    if args.has_key?(:arg)
+    if args.has_key?(:url_arg)
       if obj[:url].scan(/%[s|d]/).length > 0
-        if obj[:url].scan(/%[s|d]/).length != args[:arg].length
+        if obj[:url].scan(/%[s|d]/).length != args[:url_arg].length
           aputs "URL contains %d '%%s' or '%%d' argument... Fix your code" % obj[:url].scan(/%[s|d]/).length
           aputs __callee__
           exit 2
         end
-        req = obj[:method].new(obj[:url] % args[:arg])
+        req = obj[:method].new(obj[:url] % args[:url_arg])
       else
         req = obj[:method].new(obj[:url])
       end
@@ -602,24 +602,41 @@ class Blablacar
   # Get all trip's offers id
   #
   # @param active [Boolean] If true get only future trips, if not, get old passed trip too
+  # @param limit [FixNum] Limit of the page parsed (1 req/page)
   # @return (see #list_trip_offers)
-  def get_trip_offers(active=true)
+  def get_trip_offers(active=true, limit=3)
     dputs __method__.to_s
     if active
-      trip_offer_req = setup_http_request($active_trip_offers, @cookie, {:arg => [1]})
+      trip_offer_req = setup_http_request($active_trip_offers, @cookie, {:url_arg => [1]})
+      obj_ = $active_trip_offers
+      page_regex = $active_trip_offers[:url].gsub("?","\\?").gsub("/", "\\/") % ""
+      page_url = $active_trip_offers[:url]
     else
-      trip_offer_req = setup_http_request($inactive_trip_offers, @cookie, {:arg => [1]})
+      trip_offer_req = setup_http_request($inactive_trip_offers, @cookie, {:url_arg => [1]})
+      obj_ = $inactive_trip_offers
+      page_regex = $inactive_trip_offers[:url].gsub("?","\\?").gsub("/", "\\/") % ""
+      page_url = $inactive_trip_offers[:url]
     end
     res = @http.request(trip_offer_req)
-    #update_cookie(res)
     trips = {}
     trips = list_trip_offers(CGI.unescapeHTML(res.body.force_encoding("utf-8")))
-    pages = res.body.scan(/<a href="\/dashboard\/trip-offers\/active\?page=(\d*)/).flatten.uniq
-    pages.map{|p|
-      trip_offer_req = setup_http_request($active_trip_offers, @cookie, {:arg => [p]})
-      res = @http.request(trip_offer_req)
-      trips = trips.merge(list_trip_offers(res.body))
-    }
+    pages = res.body.scan(/<a href="#{page_regex}(\d+)/).flatten.uniq
+    # in case we got something like 1, 2, 3,4,5,6,7,8,9,21
+    pages.map!(&:to_i)
+    if not pages.empty?
+      diff = pages[-2..-1].inject(:-).abs
+      if diff > 1
+        pages += 1.upto(diff).map{|d| d + pages[-2]}.to_a
+        pages.sort!
+        pages.slice!(limit..-1)
+      end
+      pages.map{|p|
+        # Using $active_trip_offers for the method, but specify the URL
+        trip_offer_req = setup_http_request(obj_, @cookie, {:url => page_url, :url_arg => [p]})
+        res = @http.request(trip_offer_req)
+        trips = trips.merge(list_trip_offers(res.body))
+      }
+    end
     trips
   end
 
@@ -678,7 +695,7 @@ class Blablacar
       id = t.first
       t = t[1]
       print i
-      trip_req = setup_http_request($trip, @cookie, {:arg => [id]})
+      trip_req = setup_http_request($trip, @cookie, {:url_arg => [id]})
       res = @http.request(trip_req)
       p = parse_trip(res.body)
       trips[id] = p
@@ -837,10 +854,8 @@ class Blablacar
     until urls.empty?
       k, uu = urls.shift
       next if uu == nil
-      # Call get_{public,private}_conversations dynamically
-      f = self.method("get_#{k.to_s}_conversations")
       uu.map{|u|
-        f.call(u).map do |m|
+        get_conversations(u, k.to_s).map do |m|
           next if not m
           msgs[k] << m
         end
@@ -873,7 +888,7 @@ class Blablacar
       page=1
     end
     dputs __method__.to_s
-    req = setup_http_request($rating_received, @cookie, {:arg => [page]})
+    req = setup_http_request($rating_received, @cookie, {:url_arg => [page]})
     res = @http.request(req)
     ret = CGI.unescapeHTML(res.body.force_encoding('utf-8')).scan(/<h3 class="Rating-grade Rating-grade--\d">(.*)<\/h3>\s*<p class="Rating-text"><strong>(.*): <\/strong>(.*)<\/p>\s*<\/div>\s*<footer class="Speech-info">\s*<time class="Speech-date" datetime="[^"]*">(.*)<\/time>/)
     ret
@@ -1002,7 +1017,7 @@ class Blablacar
     if not t_id
       raise UpdateSeatError, "Trip not found"
     end
-    trip_req = setup_http_request($trip, @cookie, {:arg => [t_id]})
+    trip_req = setup_http_request($trip, @cookie, {:url_arg => [t_id]})
     res = @http.request(trip_req)
     p = parse_trip(res.body)
     req = setup_http_request($update_seat_req, @cookie, {:url => p[:seat_url], :arg => [seat.to_i]})
@@ -1073,10 +1088,15 @@ class Blablacar
     if res.code != "200"
       raise DuplicateTripError, "HTTP code should be 302 after [step 4 processing]"
     end
+    #@todo Need a fix here. What i need to check if the duplication was ok
+    res.each_header do |k, v|
+      puts "#{k}: #{v}\n"
+    end
     return true
   end
 
   # Check if the previous duplicated trip is published
+  # @todo maybe useless
   # @return [Boolean] true if succeed, false either
   def check_trip_published
     req = setup_http_request($check_publication, @cookie)
@@ -1098,7 +1118,7 @@ class Blablacar
     # should be JSON data like {"published":true,"encrypted_offer_id":"<sort of hash here>"}
     puts res.body
     jres = JSON.parse(res.body)
-    req = setup_http_request($publication_processed, @cookie, {:arg => [jres['encrypted_offer_id']]})
+    req = setup_http_request($publication_processed, @cookie, {:url_arg => [jres['encrypted_offer_id']]})
     res = @http.request(req)
     if res.code != "200"
       raise CheckPublishedTripError, "HTTP code should be 200 here [step 2 checking]"
