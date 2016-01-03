@@ -624,11 +624,13 @@ class Blablacar
     # in case we got something like 1, 2, 3,4,5,6,7,8,9,21
     pages.map!(&:to_i)
     if not pages.empty?
-      diff = pages[-2..-1].inject(:-).abs
-      if diff > 1
-        pages += 1.upto(diff).map{|d| d + pages[-2]}.to_a
-        pages.sort!
-        pages.slice!(limit..-1)
+      if pages.length >= 2
+        diff = pages[-2..-1].inject(:-).abs
+        if diff > 1
+          pages += 1.upto(diff).map{|d| d + pages[-2]}.to_a
+          pages.sort!
+          pages.slice!(limit..-1)
+        end
       end
       pages.map{|p|
         # Using $active_trip_offers for the method, but specify the URL
