@@ -323,13 +323,13 @@ if options[:list]
       d = t.gsub(t.split(" ").first, DAYS[t.split(" ").first])
       puts "%s (%s). Trip seen %s times" % [trips[id][:trip], d, trips[id][:stats]]
       if trips[id][:seats]
-        puts "|  %s" % [trips[id][:seats]=="0" ? "[COMPLETE]" : "#{trips[id][:seats]} seats left"]
+        puts "  |  %s" % [trips[id][:seats]=="0" ? "[COMPLETE]" : "#{trips[id][:seats]} seats left"]
       else
-        puts "|  [Trip done]"
+        puts "  |  [Trip done]"
       end
       if trips[id][:who].length > 0
         trips[id][:who].each_with_index{|v, i|
-          puts "|  %s %s\xe2\x98\x85 (%s) :: [%s seat(s)] - %s %s" % [trips[id][:who][i], trips[id][:note][i], trips[id][:phone][i], trips[id][:seat_taken][i], trips[id][:actual_trip][i], trips[id][:status][i] == "annulée" ? ">> ANNULÉE <<" : ""]
+          puts "  |  %s %s\xe2\x98\x85 (%s) :: [%s seat(s)] - %s %s" % [trips[id][:who][i], trips[id][:note][i], trips[id][:phone][i], trips[id][:seat_taken][i], trips[id][:actual_trip][i], trips[id][:status][i] == "annulée" ? ">> ANNULÉE <<" : ""]
         }
       end
     }
