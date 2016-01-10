@@ -229,7 +229,7 @@ private
     res = @http.request(money_req)
     body = CGI.unescapeHTML(res.body.force_encoding('utf-8').gsub("<br />", ""))
     @total = body.scan(/Montant total reversé <span class="money-highlight size24 bold">(.*)<\/span>/).flatten.first
-    @current = body.scan(/<p class="RequestMoney-available">Vous avez <strong>(.*)<\/strong> disponible.<\/p>/).flatten.first
+    @current = body.scan(/<p class="RequestMoney-available">[^<]+<strong>(.*)<\/strong>.+ disponible.<\/p>/).flatten.first
   end
 end
 
