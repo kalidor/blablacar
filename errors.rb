@@ -29,3 +29,7 @@ end
 #Error class during the check of a duplication
 class CheckPublishedTripError < StandardError
 end
+
+#Error class during Virement class parsing
+class VirementError < StandardError
+end
