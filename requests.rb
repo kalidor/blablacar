@@ -76,6 +76,11 @@ $private_messages = {
   :url => "/messages/received",
 }
 
+$profil_request = {
+  :method => Net::HTTP::Get,
+  :url => "/dashboard/profile/general",
+}
+
 $respond_to_message = {
   :method => Net::HTTP::Post,
   :url => "",

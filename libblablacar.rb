@@ -150,6 +150,7 @@ class Blablacar
     $DDEBUG = debug
     @authenticated = nil
     @dashboard = nil
+    @current_user = nil
   end
 
   def authenticated?
@@ -404,7 +405,7 @@ class Blablacar
   # Generic method to get public/private messages from link
   # @param url [String] URL to request
   # @param kind [String] What kind of messages: 'public' or 'private'
-  # @todo -> check [Boolean] ? Get our response too ?
+  # @param check [Boolean] Get our response too
   # @return [Array] Array of Hash. Hash containing those keys: :msgs_user, :url, :token, :trip_date, :trip, :msgs
   def get_conversations(url, kind='public', check=nil)
     dputs __method__.to_s
@@ -444,8 +445,8 @@ class Blablacar
       tmp = {:msg_user => users.first, :url => t, :token => token, :trip_date => trip_date, :trip => trip}
       tmp[:msgs] = []
       0.upto(msgs.length-1).map{|id|
-        if users[id].include?("Greg C")
-          # When I have already responded
+        # When the current user has already responded
+        if users[id].include?(@current_user)
           #  d = "[%s] %s" % [msg_hours[id], msgs[id].split(":").first]
           #  d.strip!
           if check
@@ -467,7 +468,7 @@ class Blablacar
 
   # Get private messages from link
   # @param url [String] URL to request
-  # @todo -> check [Boolean] ? Get our response too ?
+  # @param check [Boolean] Get our response too
   # @return [Array] Array of Hash. Hash containing those keys: :msgs_user, :url, :token, :trip_date, :trip, :msgs
   def get_private_conversations(url, check=nil)
     get_conversations(url, 'private', check)
@@ -475,7 +476,6 @@ class Blablacar
 
   # Get public messages from link
   # @param (see #get_private_conversations)
-  # @todo -> check [Boolean] ? Get our response too ?
   # @return (see #get_private_conversations)
   def get_public_conversations(url, check=nil)
     get_conversations(url, 'public', check)
@@ -646,6 +646,15 @@ class Blablacar
     else
       @messages = msg.to_i
     end
+  end
+
+  # Parse the profile web page
+  #
+  def parse_profil
+    dputs __method__.to_s
+    req = setup_http_request($profil_request, @cookie, {})
+    res = @http.request(req)
+    @current_user = res.body.force_encoding('utf-8').scan(/<option value="\d+"\s*selected="selected">([^<]+)<\/option><\/select>/)
   end
 
   # Get the notifications

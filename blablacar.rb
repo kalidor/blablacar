@@ -79,6 +79,7 @@ if not blabla.authenticated?
 end
 puts "[+] Authenticated"
 blabla.parse_dashboard()
+blabla.parse_profil()
 
 #blabla.search_trip("Annecy", "Lyon", "30/09/2015")
 
