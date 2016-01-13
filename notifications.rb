@@ -180,8 +180,12 @@ class Virement < Notification
     total_and_current
   end
 
+  def available
+    @current.empty? : 0 : @current
+  end
+
   def available?
-    @current
+    @current.empty? ? false : true
   end
 
   # Get money transfer status
@@ -229,7 +233,11 @@ private
     res = @http.request(money_req)
     body = CGI.unescapeHTML(res.body.force_encoding('utf-8').gsub("<br />", ""))
     @total = body.scan(/Montant total reversé <span class="money-highlight size24 bold">(.*)<\/span>/).flatten.first
-    @current = body.scan(/<p class="RequestMoney-available">[^<]+<strong>(.*)<\/strong>.+ disponible.<\/p>/).flatten.first
+    if not body.include?("Vous n'avez pas d'argent disponible")
+      @current = body.scan(/<p class="RequestMoney-available">[^<]+<strong>(.*)<\/strong>.+ disponible.<\/p>/).flatten.first
+    else
+      @current = ""
+    end
     if not @total or not @current
       raise VirementError, "Failed to parse total/available money"
     end
