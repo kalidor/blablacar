@@ -287,7 +287,7 @@ if options[:money]
   # Is money available for transfer ?
   puts "Total already requested: #{blabla.virement.total}"
   if blabla.virement.available?
-    puts "Available money: #{blabla.virement.available?}"
+    puts "Available money: #{blabla.virement.available}"
   else
     puts "No money available"
   end
