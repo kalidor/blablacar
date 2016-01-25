@@ -181,7 +181,7 @@ class Virement < Notification
   end
 
   def available
-    @current.empty? : 0 : @current
+    @current.empty? ? 0 : @current
   end
 
   def available?
