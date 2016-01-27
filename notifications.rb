@@ -232,9 +232,9 @@ private
     money_req = setup_http_request($money, @cookie)
     res = @http.request(money_req)
     body = CGI.unescapeHTML(res.body.force_encoding('utf-8').gsub("<br />", ""))
-    @total = body.scan(/Montant total reversé <span class="money-highlight size24 bold">(.*)<\/span>/).flatten.first
+    @total = body.scan(/Total [^<]+<span class="money-highlight size24 bold">(.*)<\/span>/).flatten.first
     if not body.include?("Vous n'avez pas d'argent disponible")
-      @current = body.scan(/<p class="RequestMoney-available">[^<]+<strong>(.*)<\/strong>.+ disponible.<\/p>/).flatten.first
+      @current = body.scan(/<p class="RequestMoney-available[^"]+">[^<]+<strong>(.*)<\/strong>.+ disponible.<\/p>/).flatten.first
     else
       @current = ""
     end

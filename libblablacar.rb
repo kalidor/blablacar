@@ -654,7 +654,7 @@ class Blablacar
     dputs __method__.to_s
     req = setup_http_request($profil_request, @cookie, {})
     res = @http.request(req)
-    @current_user = res.body.force_encoding('utf-8').scan(/<option value="\d+"\s*selected="selected">([^<]+)<\/option><\/select>/)
+    @current_user = res.body.force_encoding('utf-8').scan(/<option value="\d+"\s*selected="selected">([^<]+)<\/option><\/select>/).first.first
   end
 
   # Get the notifications
