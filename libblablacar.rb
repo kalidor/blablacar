@@ -379,24 +379,29 @@ class Blablacar
   # Get all passengers for all the future trips
   #
   # @return (see #parse_trip)
-  def get_planned_passengers
+  def get_planned_passengers(trip_date = nil)
     dputs __method__.to_s
     _trips = get_active_trip_offers()
-    m="Parsing (on #{_trips.length}): "
+    m="Parsing (on #{_trips.length}): " if not trip_date
     print m
     trips = {}
     _trips.each_with_index{|t,i|
       id = t.first
       t = t[1]
-      print i
+      if trip_date
+        if parse_time(t[:date]) != parse_time(trip_date)
+          next
+        end
+      end
+      print i if not trip_date
       trip_req = setup_http_request($trip, @cookie, {:url_arg => [id]})
       res = @http.request(trip_req)
       p = parse_trip(res.body)
       trips[id] = p
       trips[id][:stats] = t[:stats]
-      print 0x08.chr * i.to_s.length
+      print 0x08.chr * i.to_s.length if not trip_date
     }
-    print 0x08.chr * m.length
+    print 0x08.chr * m.length if not trip_date
     # Sort by date
     trips = Hash[trips.sort_by{|k, v| v[:when]}]
     trips
