@@ -314,7 +314,11 @@ end
 if options[:list]
   # See passengers for all future trips
   puts "Getting next planned trips:"
-  trips = blabla.get_planned_passengers()
+  if options[:trip]
+    trips = blabla.get_planned_passengers(options[:trip])
+  else
+    trips = blabla.get_planned_passengers()
+  end
   if trips.length == 0
     puts "No future planned trip(s)"
   else
@@ -322,6 +326,7 @@ if options[:list]
     trips.keys.map{|id|
       t = trips[id][:when].strftime("%A %d %b à %R")
       d = t.gsub(t.split(" ").first, DAYS[t.split(" ").first])
+      puts
       puts "%s (%s). Trip seen %s times" % [trips[id][:trip], d, trips[id][:stats]]
       if trips[id][:seats]
         puts "  |  %s" % [trips[id][:seats]=="0" ? "[COMPLETE]" : "#{trips[id][:seats]} seats left"]
@@ -336,6 +341,23 @@ if options[:list]
     }
   end
 end
+if options[:duplicate]
+  if not options[:trip]
+    STDERR.write("Need to pass --trip <trip's date and hours> you want create")
+    exit 0
+  end
+  r = blabla.duplicate(options[:duplicate], options[:trip])
+  if r
+    puts "[+] Trip is being processed..."
+    if blabla.check_trip_published(r)
+      puts "[+] Trip duplicated"
+    else
+      puts "[!] Trip cannot be duplicated"
+    end
+  else
+    puts "[!] Error in trip creation"
+  end
+end
 if options[:seats]
   if not options[:trip]
     STDERR.write("Need to pass --trip <trip's date and hours> and --seats <seat number>")
@@ -345,17 +367,5 @@ if options[:seats]
     puts "OK"
   else
     puts "Failed to set seat for this trip"
-  end
-end
-if options[:duplicate]
-  if not options[:trip]
-    STDERR.write("Need to pass --trip <trip's date and hours> you want create")
-    exit 0
-  end
-  blabla.duplicate(options[:duplicate], options[:trip])
-  if blabla.check_trip_published()
-    puts "[+] Trip duplicated"
-  else
-    puts "[!] Trip cannot be duplicated"
   end
 end
