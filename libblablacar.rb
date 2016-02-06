@@ -778,6 +778,11 @@ class Blablacar
       trip_dupl_req = setup_http_request($duplicate_inactive_trip_offers, @cookie)
     end
     res = @http.request(trip_dupl_req)
+    if res.code == "200"
+      if res.body.include?('<div class="alert alert-error')
+        raise DuplicateTripError, "Trip already available \n'%s'" % res.body.scan(/<div class="alert alert-error [^"]+">([^<]+)<a href/).flatten.first
+      end
+    end
     if res.code != "302" # Failed
       raise DuplicateTripError, "HTTP code should be 302 after [step 1 requesting]"
     end
@@ -799,36 +804,22 @@ class Blablacar
     if res.code != "200"
       raise DuplicateTripError, "HTTP code should be 302 after [step 4 processing]"
     end
-    #@todo Need a fix here. What i need to check if the duplication was ok
-    res.each_header do |k, v|
-      puts "#{k}: #{v}\n"
+    if res.body.include?("Votre annonce est en cours de traitement")
+      return res.body.scan(/https:\/\/www.blablacar.fr\/publication\/(.*)\/processing/).first.first
     end
-    return true
+    return false
   end
 
   # Check if the previous duplicated trip is published
   # @todo maybe useless
   # @return [Boolean] true if succeed, false either
-  def check_trip_published
-    req = setup_http_request($check_publication, @cookie)
-    puts "Waiting 1 seconde before checking if trip is published"
-    sleep(1)
-    res = @http.request(req)
-    res.each_header do |k, v|
-      puts "#{k}: #{v}\n"
-    end
-    puts res.body[0..1000]
-    if res.code != "200"
-      raise CheckPublishedTripError, "HTTP code should be 200 here [step 1 getting status]"
-    end
-    # should be JSON data like {"published":true,"encrypted_offer_id":"<sort of hash here>"}
-    puts res.body
-    jres = JSON.parse(res.body)
-    req = setup_http_request($publication_processed, @cookie, {:url_arg => [jres['encrypted_offer_id']]})
+  def check_trip_published(arg)
+    req = setup_http_request($publication_processed, @cookie, {:url_arg => [arg]})
     res = @http.request(req)
     if res.code != "200"
       raise CheckPublishedTripError, "HTTP code should be 200 here [step 2 checking]"
     end
+    # Votre annonce a bien été publié ou <!-- Confirm messages -->=> SUCCESS
     if res.body.force_encoding('utf-8').include?("Votre annonce a bien été publiée")
       return true
     else

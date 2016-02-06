@@ -44,14 +44,9 @@ $duplicate_inactive_trip_offers = {
   :referer => "https://www.blablacar.fr/dashboard/trip-offers/inactive"
 }
 
-$check_publication = {
-  :method => Net::HTTP::Get,
-  :url => "/publication/_check",
-}
-
 $publication_processed = {
   :method => Net::HTTP::Get,
-  :url => "/publication/processed/%s"
+  :url => "/publication/%s/processed"
 }
 
 $trip = {
