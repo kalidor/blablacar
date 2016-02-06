@@ -819,9 +819,10 @@ class Blablacar
     if res.code != "200"
       raise CheckPublishedTripError, "HTTP code should be 200 here [step 2 checking]"
     end
-    # Votre annonce a bien été publié ou <!-- Confirm messages -->=> SUCCESS
     if res.body.force_encoding('utf-8').include?("Votre annonce a bien été publiée")
-      return true
+      return true, 0
+    elsif res.body.force_encoding('utf-8').include?("Votre annonce sera publiée dans quelques instants")
+      return true, 1
     else
       return false
     end

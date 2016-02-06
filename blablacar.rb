@@ -349,8 +349,10 @@ if options[:duplicate]
   r = blabla.duplicate(options[:duplicate], options[:trip])
   if r
     puts "[+] Trip is being processed..."
-    if blabla.check_trip_published(r)
+    if blabla.check_trip_published(r) == [true, 0]
       puts "[+] Trip duplicated"
+    elsif blabla.check_trip_published(r) == [true, 1]
+      puts "[+] Trip is gonna be duplicated soon"
     else
       puts "[!] Trip cannot be duplicated"
     end
