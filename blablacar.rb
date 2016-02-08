@@ -223,6 +223,28 @@ if options[:notifications]
   end
 end
 
+if options[:code]
+  if not options[:user]
+    STDERR.write("Need to pass username through --user option")
+    exit 0
+  end
+  i = blabla.notifications.map{|notif| notif.user}.index(options[:user])
+  if not i
+    STDERR.write("User not found in notification")
+    exit 0
+  end
+  if blabla.notifications[i].instance_of?(ValidationNotification)
+    puts blabla.notifications[i].desc
+    if options[:user] == blabla.notifications[i].user
+      if blabla.notifications[i].confirm(options[:code])
+        puts "[+] Code ok for #{blabla.notifications[i].user}"
+      else
+        puts "[-] Code ko for #{blabla.notifications[i].user}"
+      end
+    end
+  end
+end
+
 if options[:avis]
   if not options[:user]
     STDERR.write("Need to pass username through --user option")
@@ -262,27 +284,6 @@ if options[:avis]
   end
 end
 
-if options[:code]
-  if not options[:user]
-    STDERR.write("Need to pass username through --user option")
-    exit 0
-  end
-  i = blabla.notifications.map{|notif| notif.user}.index(options[:user])
-  if not i
-    STDERR.write("User not found in notification")
-    exit 0
-  end
-  if blabla.notifications[i].instance_of?(ValidationNotification)
-    puts blabla.notifications[i].desc
-    if options[:user] == blabla.notifications[i].user
-      if blabla.notifications[i].confirm(options[:code])
-        puts "[+] Code ok for #{blabla.notifications[i].user}"
-      else
-        puts "[-] Code ko for #{blabla.notifications[i].user}"
-      end
-    end
-  end
-end
 
 if options[:money]
   # Is money available for transfer ?
