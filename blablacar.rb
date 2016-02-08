@@ -5,7 +5,7 @@
 # Published under the terms of the wtfPLv2
 
 require 'optparse'
-$LOAD_PATH.unshift(File.expand_path(File.dirname(__FILE__)))
+$LOAD_PATH.unshift(File.join(File.expand_path(File.dirname(__FILE__)), "lib"))
 require 'libblablacar'
 
 options = {}
