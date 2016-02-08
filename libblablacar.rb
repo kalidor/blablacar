@@ -169,22 +169,7 @@ class Blablacar
      @notifications
   end
 
-  # Update current cookie
-  def update_cookie(data)
-    if data['set-cookie']
-      # don't by shy, let's take every cookie...
-      t = data['set-cookie'].scan(/([a-zA-Z0-9_\-\.]*=[^;]*;)/).flatten
-      t.delete_if{|c| c.start_with?("path=")}
-      t.delete_if{|c| c.start_with?("expires=")}
-      t.map{|tt|
-        if not @cookie.include?(tt)
-          @cookie = @cookie + tt
-        end
-      }
-    end
-  end
-
-  # Parse header in order to get the cookie and save it for the next futures requests
+  # Get cookie key=value and save it for the next futures requests
   #
   # @param data [Net::HTTPResponse] Net::HTTPResponse object containing HTTP headers
   def get_cookie(data)
@@ -196,16 +181,8 @@ class Blablacar
       if t.length == 1
         @cookie = @cookie + t.first
       else
-        #if @cookie
-        #  puts "coin"
-        #  c = @cookie.split(";").map{|c| c.strip}
-        #  puts "+"*20
-        #  @cookie = (c | t).join("; ")
-        #else
-          @cookie = t.join("; ")
-        #end
+        @cookie = t.join("; ")
       end
-      #puts @cookie
     end
   end
 
@@ -265,8 +242,9 @@ class Blablacar
     (aputs "Can't get Cookie send_credentials"; exit 2) if not @cookie
   end
 
-  # (Authentication Step 3) Try to access to the dashboard
+  # Let's try if we can access the dashboard
   def get_dashboard
+    # Setp 3: Try to access to the dashboard
     dashboard_req = setup_http_request($dashboard, @cookie)
     res = @http.request(dashboard_req)
     if res.code=='400' or res['location'] == "https://www.blablacar.fr/identification"
