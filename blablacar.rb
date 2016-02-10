@@ -67,6 +67,9 @@ class String
         nil
     end
   end
+  def strikethrough
+    "\e[9m#{self}\e[0m"
+  end
 end
 
 vputs "Starting: %s" % Time.now.to_s
@@ -336,7 +339,12 @@ if options[:list]
       end
       if trips[id][:who].length > 0
         trips[id][:who].each_with_index{|v, i|
-          puts "  |  %s %s\xe2\x98\x85 (%s) :: [%s seat(s)] - %s %s" % [trips[id][:who][i], trips[id][:note][i], trips[id][:phone][i], trips[id][:seat_taken][i], trips[id][:actual_trip][i], trips[id][:status][i] == "annulée" ? ">> ANNULÉE <<" : ""]
+          if trips[id][:status][i] == "annulée"
+            s = "%s %s\xe2\x98\x85 (%s) :: [%s seat(s)] - %s" % [trips[id][:who][i], trips[id][:note][i], trips[id][:phone][i], trips[id][:seat_taken][i], trips[id][:actual_trip][i]]
+            puts "  |  #{s.strikethrough}"
+          else
+            puts "  |  %s %s\xe2\x98\x85 (%s) :: [%s seat(s)] - %s" % [trips[id][:who][i], trips[id][:note][i], trips[id][:phone][i], trips[id][:seat_taken][i], trips[id][:actual_trip][i]]
+          end
         }
       end
     }
