@@ -11,6 +11,15 @@ Here is what it works:
 + Duplicate passed or planned trip (Please use YYYY/MM/DD) (error are displayed but it works, still working on it)
 + Update number of seats for a trip (Please use YYYY/MM/DD)
 
+List planned trip:
+```bash
+Lyon -> Annecy (Vendredi 18 Dec à 17:50). Trip seen 56 times
+  |  [COMPLETE]
+  |  Hugo K (21 ans) 4.4★ (XX XX XX XX XX) :: [1 seat(s)] - Lyon -> Annecy
+  |  Amelie R (20 ans) 4.1★ (XX XX XX XX XX) :: [1 seat(s)] - Lyon -> Chambery
+  |  Christophe R (27 ans) 4.5★ (XX XX XX XX XX) :: [1 seat(s)] - Lyon -> Annecy
+```
+
 Show notifications:
 ```bash
 [8:19 ~/bin/blabla:master]% ./blablacar.rb -N
@@ -37,13 +46,13 @@ Show payment status:
 [8:20 ~/bin/blabla:master]% ./blablacar.rb -s
 Transfer successfully requested
 Money status (lastpage):
-  AAA G (1 place - 9 €) - Annecy -> Lyon [Virement en cours]
-  BBB W (1 place - 6 €) - Lyon -> Chambéry [Virement en cours]
-  CCC M (1 place - 9 €) - Annecy -> Lyon [Virement en cours]
-  DDD S (1 place - 9 €) - Annecy -> Lyon [Virement en cours]
-  EEE Y (2 places - 18 €) - Bron -> Annecy [Verifications en cours]
-  FFF Y (1 place - 9 €) - Lyon -> Annecy [Virement effectué le 04/12/2015]
-  GGG B (2 places - 6 €) - Lyon -> Chambéry [Virement effectué le 04/12/2015]
+  INN H (1 place - 9 €) - Annecy -> Lyon [Virement en cours]
+  TNT A (1 place - 6 €) - Lyon -> Chambéry [Virement en cours]
+  SYT C (1 place - 9 €) - Annecy -> Lyon [Virement en cours]
+  SYH K (1 place - 9 €) - Annecy -> Lyon [Virement en cours]
+  OAI E (2 places - 18 €) - Bron -> Annecy [Verifications en cours]
+  FDN R (1 place - 9 €) - Lyon -> Annecy [Virement effectué le 04/12/2015]
+  UOK S (2 places - 6 €) - Lyon -> Chambéry [Virement effectué le 04/12/2015]
 ```
 
 Send an opinion about a passenger / driver:
