@@ -341,7 +341,7 @@ class Blablacar
     t[:note] = res.scan(/<span class="u-bold dark-gray">(.*)<\/span><span class="fade-gray">/).flatten
     t[:phone] = res.scan(/<span class="mobile*">(.*)<\/span>/).flatten
     t[:seat_taken] = res.scan(/<li class="passenger-seat">(\d) place[s]?<\/li>/).flatten
-    t[:status] = res.scan(/<div class="pull-right bold (?:green|dark-gray) size16 uppercase">(.*)<\/div>/).flatten
+    t[:status] = res.scan(/<div class="u-right (?:u-green|u-gray) size16 uppercase">\s*<b>([^<]+)<\/b>\s*<\/div>/).flatten
     t[:actual_trip] = res.scan(/<ul class="u-reset passenger-trip size17">\s*<li>\s([a-zA-Zé\ \-]*)\s*<\/li>/).flatten.map{|c| c.strip!;c.gsub!(" - ", " -> ")}
 
     # Insert blanck phone number
