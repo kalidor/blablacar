@@ -132,7 +132,7 @@ class ValidationNotification < Notification
     get_form_confirm_req = setup_http_request($dashboard, @cookie,{:url=>loc})
     res = @http.request(get_form_confirm_req)
     body = res.body.force_encoding('utf-8')
-    confirmed = body.scan(/<div class="pull-right bold green size16 uppercase">Confirm.e<\/div>\s*<span class="passenger-fullname">([^<]*)<\/span>/).flatten
+    confirmed = body.scan(/<div class="u-right u-green size16 uppercase">\s*<b>Confirm.e<\/b>\s*<\/div>\s*<span class="passenger-fullname">([^<]*)<\/span>/).flatten
     return confirmed.include?(@user)
   end
 
@@ -312,7 +312,7 @@ class AvisNotification < Notification
   def send_as_driver(status, note, avis)
     send(status, note, avis)
   end
-  
+
   # Send an avis about the driver
   #
   # @param status [String] P for passenger, D for Driver
