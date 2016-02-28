@@ -93,7 +93,8 @@ OK
 
 Duplicate trip:
 ```
-[11:00 ~/Codes/blablacar]% ./blablacar.rb --duplicate "2015/12/12 à 6h" -T "2015/12/14 à 6h"
+[11:00 ~/Codes/blablacar]% ./blablacar.rb --duplicate "2015/12/12 à 6h" --trip "2015/12/14 à 6h"
 [+] Authenticated
-OK
+[+] Trip is being processed...
+[+] Trip duplicated
 ```
