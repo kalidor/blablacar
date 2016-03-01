@@ -223,7 +223,7 @@ class Blablacar
   def load_conf(file=nil)
     file ||= File.join(ENV['HOME'], '.blablacar', 'conf.rc')
     begin
-      $CONF = YAML.load_file(f)
+      $CONF = YAML.load_file(file)
     rescue Errno::ENOENT => e
       eputs(e.message)
       exit 2
