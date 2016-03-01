@@ -221,7 +221,7 @@ class Blablacar
   #
   # @param file [String] Path to the configuration file
   def load_conf(file=nil)
-    f = file || File.join(ENV['HOME'], '.blablacar.rc')
+    file ||= File.join(ENV['HOME'], '.blablacar', 'conf.rc')
     begin
       $CONF = YAML.load_file(f)
     rescue Errno::ENOENT => e
@@ -360,8 +360,10 @@ class Blablacar
   def get_planned_passengers(trip_date = nil)
     dputs __method__.to_s
     _trips = get_active_trip_offers()
-    m="Parsing (on #{_trips.length}): " if not trip_date
-    print m
+    if $VERBOSE
+      m="Parsing (on #{_trips.length}): "
+      print m
+    end
     trips = {}
     _trips.each_with_index{|t,i|
       id = t.first
@@ -371,15 +373,21 @@ class Blablacar
           next
         end
       end
-      print i if not trip_date
+      if $VERBOSE
+        print i
+      end
       trip_req = setup_http_request($trip, @cookie, {:url_arg => [id]})
       res = @http.request(trip_req)
       p = parse_trip(res.body)
       trips[id] = p
       trips[id][:stats] = t[:stats]
-      print 0x08.chr * i.to_s.length if not trip_date
+      if $VERBOSE
+        print 0x08.chr * i.to_s.length
+      end
     }
-    print 0x08.chr * m.length if not trip_date
+      if $VERBOSE
+        print 0x08.chr * m.length
+      end
     # Sort by date
     trips = Hash[trips.sort_by{|k, v| v[:when]}]
     trips
