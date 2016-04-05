@@ -761,7 +761,7 @@ class Blablacar
       trip_dupl_req = setup_http_request($duplicate_active_trip_offers, @cookie)
     else
       $duplicate_inactive_trip_offers[:data] = data.join("&")
-      $duplicate_inactive_trip_offers[:url] += "?page=#{indx+1}"
+      $duplicate_inactive_trip_offers[:url] += "?page=#{indx}"
       trip_dupl_req = setup_http_request($duplicate_inactive_trip_offers, @cookie)
     end
     res = @http.request(trip_dupl_req)
