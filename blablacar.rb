@@ -77,10 +77,10 @@ vputs "Starting: %s" % Time.now.to_s
 blabla = Blablacar.new(options[:verbose], options[:debug])
 blabla.run(options[:configuration])
 if not blabla.authenticated?
-  puts "[!] Authentication failed"
+  puts "[!] Echec de l'authentication"
   exit 0
 end
-puts "[+] Authenticated"
+puts "[+] Authentifié"
 blabla.parse_dashboard()
 blabla.parse_profil()
 
@@ -110,10 +110,10 @@ if options[:message]
       }
     }
     if options[:interactive].to_boolean != true
-      puts "Interactive mode disabled"
+      puts "Mode interactif desactivé"
     else
       while true do
-        print "('q' for quit, input question num to respond to) Respond to > "
+        print "('q' pour quitter, entrer le numéro de la question pour y répondre >"
         ind = STDIN.readline.chomp!
         if ind == "n" or ind == "next"
           break
@@ -130,30 +130,30 @@ if options[:message]
           end
         }
         if not found
-          puts "[!] Invalid index"
+          puts "[!] Index invalide"
           next
         end
-        print "Enter message (think to escape '!')> "
+        print "Entrer le message (penser à échapper '!')> "
         response = STDIN.readline.chomp!
         if response.empty?
-          puts "[!] Empty message"
+          puts "[!] Message vide"
           next
         end
         if blabla.respond_to_question(found[:url], found[:token], response)
-          puts "Message sent"
+          puts "Message envoyé"
           break
         end
       end
     end
   else
-    puts "No new messages"
+    puts "0 nouveaux messages"
   end
 end
 
 if options[:reason]
   case options[:reason]
     when "l", "L", "list", "List", "LIST"
-      puts "Reason list:"
+      puts "Raisons:"
       l = REASON_REFUSE.keys().map{|r| r.length}.max + 5
       REASON_REFUSE.map{|k, v|
         puts "  #{k} %s  #{v}" % (" " * (l - k.length))
@@ -163,37 +163,37 @@ end
 
 if options[:refuse]
   if not options[:user]
-    STDERR.write("Need -u <username> argument")
+    STDERR.write("Argument nécessaire -u <username>")
   end
   if not options[:trip]
-    STDERR.write("Need -T <tripdate> argument")
+    STDERR.write("Argument nécessaire -T <tripdate>")
   end
   if not options[:reason]
-    STDERR.write("Need -R <reason> argument (use -R list to see all reasons)")
+    STDERR.write("Argument nécessaire -R <reason> (-R pour lister toutes les raisons)")
   end
   if not options[:comment]
-    STDERR.write("Need -r <comment> argument")
+    STDERR.write("Argument nécessaire -r <comment>")
   end
   if not blabla.notifications?
-    puts "None notification"
+    puts "Aucune notification"
     return
   end
   blabla.notifications.map{|notif|
     next if not notif.class == AcceptationNotification
     if notif.refuse(options[:user], options[:trip], options[:reason], options[:comment])
-      puts "[+] Refused"
+      puts "[+] Refusé"
     else
-      puts "[-] Failed"
+      puts "[-] Echec"
     end
   }
 end
 
 if options[:acceptation]
   if not options[:user]
-    STDERR.write("Need -u <username> argument")
+    STDERR.write("Argument nécessaire -u <username>")
   end
   if not options[:trip]
-    STDERR.write("Need -T <tripdate> argument")
+    STDERR.write("Argument nécessaire -T <tripdate>")
   end
   if not blabla.notifications?
     puts "None notification"
@@ -203,9 +203,9 @@ if options[:acceptation]
     next if not notif.class == AcceptationNotification
     if options[:user] == notif.user
       if notif.accept()
-        puts "[+] Accepted"
+        puts "[+] Accepté"
       else
-        puts "[-] Failed"
+        puts "[-] Echec"
       end
     end
   }
@@ -213,7 +213,7 @@ end
 
 if options[:notifications]
   if not blabla.notifications?
-    puts "None notification"
+    puts "Aucune notification"
   else
     puts "Notification:"
     blabla.notifications.map{|notif|
@@ -228,21 +228,21 @@ end
 
 if options[:code]
   if not options[:user]
-    STDERR.write("Need to pass username through --user option")
+    STDERR.write("Argument nécessaire --user <utilisateur>")
     exit 0
   end
   i = blabla.notifications.map{|notif| notif.user}.index(options[:user])
   if not i
-    STDERR.write("User not found in notification")
+    STDERR.write("Utilisateur introuvable dans les notifications")
     exit 0
   end
   if blabla.notifications[i].instance_of?(ValidationNotification)
     puts blabla.notifications[i].desc
     if options[:user] == blabla.notifications[i].user
       if blabla.notifications[i].confirm(options[:code])
-        puts "[+] Code ok for #{blabla.notifications[i].user}"
+        puts "[+] Code ok pour #{blabla.notifications[i].user}"
       else
-        puts "[-] Code ko for #{blabla.notifications[i].user}"
+        puts "[-] Code ko pour #{blabla.notifications[i].user}"
       end
     end
   end
@@ -250,11 +250,11 @@ end
 
 if options[:avis]
   if not options[:user]
-    STDERR.write("Need to pass username through --user option")
+    STDERR.write("Argument nécessaire --user <utilisateur>")
     exit 0
   end
   if not options[:note]
-    STDERR.write("Need to pass note through --note option")
+    STDERR.write("Argument nécessaire --note <note>")
     exit 0
   end
   s = nil
@@ -265,12 +265,12 @@ if options[:avis]
     s = "P"
   end
   if not s
-    STDERR.write("Who do you want to send a comment to")
+    STDERR.write("A qui voulez-vous envoyé un avis")
     exit 0
   end
   i = blabla.notifications.map{|notif| notif.user}.index(options[:user])
   if not i
-    STDERR.write("User not found in notification")
+    STDERR.write("Utilisateur introuvable dans les notifications")
     exit 0
   end
   notif = blabla.notifications.map{|notif|
@@ -282,7 +282,7 @@ if options[:avis]
   if notif.instance_of?(AvisNotification)
     puts notif.desc
     if notif.send(s, options[:note], options[:avis])
-      puts "Opinion sent"
+      puts "Opinion envoyée"
     end
   end
 end
@@ -290,26 +290,26 @@ end
 
 if options[:money]
   # Is money available for transfer ?
-  puts "Total already requested: #{blabla.virement.total}"
+  puts "Total déjà transféré: #{blabla.virement.total}"
   if blabla.virement.available?
-    puts "Available money: #{blabla.virement.available}"
+    puts "Argent disponible: #{blabla.virement.available}"
   else
-    puts "No money available"
+    puts "Pas d'argent disponible"
   end
 end
 
 if options[:transfer]
   if blabla.virement.transfer()
-    puts "Transfer successfully requested"
+    puts "Requête du transfert de l'argent effectuée"
   else
-    puts "Transfer request failed"
+    puts "Echec de la requête du transfert"
   end
 end
 
 if options[:money_status]
   # Show me if some transfer are pending or done
   # Search only on the last page...
-  puts "Money status (lastpage):"
+  puts "Status de l'argent (dernière page):"
   blabla.virement.status?().map{|c|
     puts "  %s (%s) - %s [%s]" % c
   }
@@ -317,25 +317,25 @@ end
 
 if options[:list]
   # See passengers for all future trips
-  puts "Getting next planned trips:"
+  puts "Récupération des prochains trajets:"
   if options[:trip]
     trips = blabla.get_planned_passengers(options[:trip])
   else
     trips = blabla.get_planned_passengers()
   end
   if trips.length == 0
-    puts "No future planned trip(s)"
+    puts "Aucun trajet de prévu"
   else
-    puts "See planned_passengers:"
+    puts "Trajets avec passager(s) associé(s):"
     trips.keys.map{|id|
       t = trips[id][:when].strftime("%A %d %b à %R")
       d = t.gsub(t.split(" ").first, DAYS[t.split(" ").first])
       puts
-      puts "%s (%s). Trip seen %s times" % [trips[id][:trip], d, trips[id][:stats]]
+      puts "%s (%s). Trajet vu %s fois" % [trips[id][:trip], d, trips[id][:stats]]
       if trips[id][:seats]
-        puts "  |  %s" % [trips[id][:seats]=="0" ? "[COMPLETE]" : "#{trips[id][:seats]} seats left"]
+        puts "  |  %s" % [trips[id][:seats]=="0" ? "[COMPLET]" : "#{trips[id][:seats]} sièges disponibles"]
       else
-        puts "  |  [Trip done]"
+        puts "  |  [Trajet fait]"
       end
       if trips[id][:who].length > 0
         trips[id][:who].each_with_index{|v, i|
@@ -352,31 +352,31 @@ if options[:list]
 end
 if options[:duplicate]
   if not options[:trip]
-    STDERR.write("Need to pass --trip <trip's date and hours> you want create")
+    STDERR.write("Argument nécessaire --trip <date et heure du trajet> qui doit être créer")
     exit 0
   end
   r = blabla.duplicate(options[:duplicate], options[:trip])
   if r
-    puts "[+] Trip is being processed..."
+    puts "[+] Trajet en cours de création"
     if blabla.check_trip_published(r) == [true, 0]
-      puts "[+] Trip duplicated"
+      puts "[+] Trajet dupliqué"
     elsif blabla.check_trip_published(r) == [true, 1]
-      puts "[+] Trip is gonna be duplicated soon"
+      puts "[+] Trajet sera bientôt dupliqué"
     else
-      puts "[!] Trip cannot be duplicated"
+      puts "[!] Trajet ne peut pas être dupliqué"
     end
   else
-    puts "[!] Error in trip creation"
+    puts "[!] Erreur dans la création du trajet"
   end
 end
 if options[:seats]
   if not options[:trip]
-    STDERR.write("Need to pass --trip <trip's date and hours> and --seats <seat number>")
+    STDERR.write("Argument nécessaire --trip <date et heure du trajet> ")
     exit 0
   end
   if blabla.update_seat(options[:trip], options[:seats])
     puts "OK"
   else
-    puts "Failed to set seat for this trip"
+    puts "Erreur dans la modification du nombre de place pour ce trajet"
   end
 end
