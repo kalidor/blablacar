@@ -234,7 +234,7 @@ private
     body = CGI.unescapeHTML(res.body.force_encoding('utf-8').gsub("<br />", ""))
     @total = body.scan(/Total [^<]+<span class="money-highlight size24 bold">(.*)<\/span>/).flatten.first
     if not body.include?("Vous n'avez pas d'argent disponible")
-      @current = body.scan(/<p class="RequestMoney-available[^"]+">[^<]+<strong>(.*)<\/strong>.+ disponible.<\/p>/).flatten.first
+      @current = body.scan(/<p class="RequestMoney-available[^"]+">[^<]+<strong>(.*)<\/strong>.+disponible./).flatten.first
     else
       @current = ""
     end
