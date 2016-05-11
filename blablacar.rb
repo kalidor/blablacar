@@ -358,9 +358,10 @@ if options[:duplicate]
   r = blabla.duplicate(options[:duplicate], options[:trip])
   if r
     puts "[+] Trajet en cours de création"
-    if blabla.check_trip_published(r) == [true, 0]
+    ret = blabla.check_trip_published(r)
+    if ret == [true, 0]
       puts "[+] Trajet dupliqué"
-    elsif blabla.check_trip_published(r) == [true, 1]
+    elsif ret == [true, 1]
       puts "[+] Trajet sera bientôt dupliqué"
     else
       puts "[!] Trajet ne peut pas être dupliqué"
