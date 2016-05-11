@@ -338,6 +338,20 @@ class Blablacar
     t[:seat_url] = res.scan(/<form action="(\/dashboard\/trip\/\d+\/_seatCount\?token=[^"]+)/).flatten.first
     t[:seats] = res.scan(/(?:<input type="text" name="count" class="nb-seats" data-booking-enabled="\d+" data-value-warning="\d+" data-number-min="\d+" data-number-max="\d+" value="(\d+)")/).flatten.first
     t[:who] = res.scan(/<a href="\/membre\/profil\/.*" class="blue">\s*(.*)\s*<\/a>/).flatten.map{|c| c.strip!}
+    if t[:who].include?(nil)
+      tmp = res.scan(/<ul class="u-reset size17 passenger-infos">\s*<li>\s*<span class="tip" title="([^"]*)" data-placement="top">/).flatten
+      tmp_num = res.scan(/<p class="u-midGray size12">([^<]*)<\/p>/).flatten
+      if t[:who].count(nil) > 1
+      end
+      tmp.each_with_index{|c,ind|
+        t[:who].each_with_index{|w,i|
+          if w == nil
+            t[:who][i] = tmp[ind]
+            break
+          end
+        }
+      }
+    end
     t[:note] = res.scan(/<span class="u-bold dark-gray">(.*)<\/span><span class="fade-gray">/).flatten
     t[:phone] = res.scan(/<span class="mobile*">(.*)<\/span>/).flatten
     t[:seat_taken] = res.scan(/<li class="passenger-seat">(\d) place[s]?<\/li>/).flatten
