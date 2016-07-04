@@ -121,7 +121,7 @@ $avis_req_post = {
 $avis_req_post_confirm = {
   :method => Net::HTTP::Post,
   :url => "",
-  :data => "rating_preview[confirm]=&rating_preview[_token]=%s",
+  :data => "rating_preview[confirm]=&rating_preview[role]=%s&rating_preview[global_rating]=%s&rating_preview[comment]=%s&rating_preview[driving_rating]=&rating_preview[driving_rating_optional]=1&rating_preview[_token]=%s",
   :header => ["Content-Type", "application/x-www-form-urlencoded"]
 }
 $rating_received = {

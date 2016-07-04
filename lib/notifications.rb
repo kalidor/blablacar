@@ -287,8 +287,8 @@ class AvisNotification < Notification
     req = setup_http_request($avis_req_get, @cookie, {:url => res['location']})
     res = @http.request(req)
     url = res.body.scan(/<form class="[^"]*" action="(\/dashboard\/ratings\/.*)" method="POST"/).flatten.first
-    token = res.body.scan(/<input type="hidden" id="rating_preview__token" name="rating_preview\[_token\]" value="([^"]*)" \/>/).flatten.first
-    req = setup_http_request($avis_req_post_confirm, @cookie, {:url => url, :arg => [token]})
+    token = res.body.scan(/name="rating_preview\[_token\]" value="([^"]*)" \/>/).flatten.first
+    req = setup_http_request($avis_req_post_confirm, @cookie, {:url => url, :arg => [status, note, CGI.escape(comment), token]})
     res = @http.request(req)
     if not res['location']
       puts "Uh I'm not being redirected?... What a failure!"
