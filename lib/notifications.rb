@@ -113,10 +113,10 @@ class ValidationNotification < Notification
   # @param data [String] HTTP response body
   # @return [String] Stripped HTTP response body
   def find_user_need_confirm(data)
-    m = data.scan(/Vous avez voyag/)
+    m = data.scan(/<span class="passenger-fullname">/)
     while t = m.shift do
       i = data.index(t)
-      res = data[i..i+1000]
+      res = data[i..i+3000]
       if res.include?(@user)
         return res
       end
