@@ -217,6 +217,17 @@ class Blablacar
     }
   end
 
+  # Load the where I save validated requests from people asked me directly
+  def load_local_requests(file=nil)
+    file ||= File.join(ENV['HOME'], '.blablacar', 'direct.rc')
+    begin
+      $DIRECT = YAML.load_file(file)
+    rescue Errno::ENOENT => e
+      eputs(e.message)
+      exit 2
+    end
+  end
+
   # Load the configuration file into $CONF constant
   #
   # @param file [String] Path to the configuration file
@@ -785,24 +796,28 @@ class Blablacar
       end
     end
     if res.code != "302" # Failed
+      File.open("duplicate_error1.html","w") do |f| f.write(res.body); end
       raise DuplicateTripError, "HTTP code should be 302 after [step 1 requesting]"
     end
     to_req = res['location'] # should be /trip/<start>-<end>-<id>/compute
     req = setup_http_request($dashboard, @cookie, {:url => to_req}) # $dashboard for Get method
     res = @http.request(req)
     if res.code != "302"
+      File.open("duplicate_error2.html","w") do |f| f.write(res.body); end
       raise DuplicateTripError, "HTTP code should be 302 after [step 2] computing"
     end
     to_req = res['location'] # should be /trip/publish
     req = setup_http_request($dashboard, @cookie, {:url => to_req}) # $dashboard for Get method
     res = @http.request(req)
     if res.code != "302"
+      File.open("duplicate_error3.html","w") do |f| f.write(res.body); end
       raise DuplicateTripError, "HTTP code should be 302 after [step 3 publishing]"
     end
     to_req = res['location'] #should be /publication/processing
     req = setup_http_request($dashboard, @cookie, {:url => to_req}) # $dashboard for Get method
     res = @http.request(req)
     if res.code != "200"
+      File.open("duplicate_error4.html","w") do |f| f.write(res.body); end
       raise DuplicateTripError, "HTTP code should be 302 after [step 4 processing]"
     end
     if res.body.include?("Votre annonce est en cours de traitement")
@@ -815,9 +830,15 @@ class Blablacar
   # @todo maybe useless
   # @return [Boolean] true if succeed, false either
   def check_trip_published(arg)
+    puts "[testing]sleeping 1 sec to avoid an error on blablacar server side"
+    sleep(1)
     req = setup_http_request($publication_processed, @cookie, {:url_arg => [arg]})
     res = @http.request(req)
     if res.code != "200"
+      if res.body.include?("maintenance")
+        puts "[?] Blablacar est en maintenance"
+      end
+      File.open("Checkpublished_error1.html","w") do |f| f.write(res.body); end
       raise CheckPublishedTripError, "HTTP code should be 200 here [step 2 checking]"
     end
     if res.body.force_encoding('utf-8').include?("Voir votre annonce")

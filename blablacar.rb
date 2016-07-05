@@ -75,7 +75,17 @@ end
 vputs "Starting: %s" % Time.now.to_s
 
 blabla = Blablacar.new(options[:verbose], options[:debug])
-blabla.run(options[:configuration])
+begin
+  blabla.run(options[:configuration])
+rescue SocketError => e
+  $MSG = "NO NETWORK"
+rescue Errno::ECONNREFUSED => e
+  $MSG = "NO NETWORK"
+rescue Errno::ENOTTY => e
+  $MSG = "Can't access Internet"
+rescue Errno::ETIMEDOUT
+  $MSG = "Can't access Internet"
+end
 if not blabla.authenticated?
   puts "[!] Echec de l'authentication"
   exit 0
