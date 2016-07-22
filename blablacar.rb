@@ -249,7 +249,7 @@ if options[:code]
   if blabla.notifications[i].instance_of?(ValidationNotification)
     puts blabla.notifications[i].desc
     if options[:user] == blabla.notifications[i].user
-      if blabla.notifications[i].confirm(options[:code])
+      if blabla.notifications[i].confirm(options[:user], options[:code])
         puts "[+] Code ok pour #{blabla.notifications[i].user}"
       else
         puts "[-] Code ko pour #{blabla.notifications[i].user}"

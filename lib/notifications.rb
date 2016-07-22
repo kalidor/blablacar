@@ -113,15 +113,16 @@ class ValidationNotification < Notification
   # @param data [String] HTTP response body
   # @return [String] Stripped HTTP response body
   def find_user_need_confirm(data)
-    m = data.scan(/<span class="passenger-fullname">/)
-    while t = m.shift do
-      i = data.index(t)
-      res = data[i..i+3000]
-      if res.include?(@user)
-        return res
-      end
-      data = data[i+1000..-1]
-    end
+    res = {}
+    us = data.scan(/<b>acceptée<\/b>\s*<\/div>\s*<span class="passenger-fullname">([^<]*)<\/span>/).flatten
+    ur = data.scan(/<form method="post" action="(\/seat-driver-confirm\/[^"]*)">/).flatten
+    to = data.scan(/name="confirm_booking\[_token\]" value="([^"]*)" \/>/).flatten
+    us.each_with_index{|u, id|
+      res[u] = {}
+      res[u][:url] = ur[id]
+      res[u][:token] = to[id]
+    }
+    res
   end
 
   # Confirm the validation
@@ -140,7 +141,7 @@ class ValidationNotification < Notification
   #
   # @param code [String] Validation code given by the passenger after the trip
   # @return [Boolean] true if succeed, false if validation code if bad, nil if the request failed
-  def confirm(code)
+  def confirm(user,code)
     dputs __method__.to_s
     get_confirm_req = setup_http_request($dashboard, @cookie, {:url=>@url})
     res = @http.request(get_confirm_req)
@@ -151,13 +152,11 @@ class ValidationNotification < Notification
     end
     get_form_confirm_req = setup_http_request($dashboard, @cookie,{:url=>loc})
     res = @http.request(get_form_confirm_req)
-    body = find_user_need_confirm(res.body.force_encoding('utf-8'))
-    if not body
+    ret = find_user_need_confirm(res.body.force_encoding('utf-8'))
+    if not ret.keys.include?(user)
       raise ValidateTripError, "User not found"
     end
-    form_url = body.scan(/<form method="post" action="(\/seat-driver[^"]*)">/).flatten.first
-    token = body.scan(/name="confirm_booking\[_token\]" value="([^"]*)" \/>/).flatten.first
-    confirm_req = setup_http_request($trip_confirmation, @cookie, {:url => form_url, :arg => [code, token]})
+    confirm_req = setup_http_request($trip_confirmation, @cookie, {:url => ret[user][:url], :arg => [code, ret[user][:token]]})
     res = @http.request(confirm_req)
     # We get 302 code, and we have to request the first page in order to check if
     # the validation is "Confirmée"
