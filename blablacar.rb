@@ -327,7 +327,7 @@ end
 
 if options[:list]
   # See passengers for all future trips
-  puts "Récupération des prochains trajets:"
+  puts "Récupération des prochains trajets"
   if options[:trip]
     trips = blabla.get_planned_passengers(options[:trip])
   else
@@ -336,7 +336,7 @@ if options[:list]
   if trips.length == 0
     puts "Aucun trajet de prévu"
   else
-    puts "Trajets avec passager(s) associé(s):"
+    puts "Trajet(s) avec passager(s) associé(s):"
     trips.keys.map{|id|
       t = trips[id][:when].strftime("%A %d %b à %R")
       d = t.gsub(t.split(" ").first, DAYS[t.split(" ").first])
@@ -350,10 +350,10 @@ if options[:list]
       if trips[id][:who].length > 0
         trips[id][:who].each_with_index{|v, i|
           if trips[id][:status][i] == "annulée"
-            s = "%s %s\xe2\x98\x85 (%s) :: [%s seat(s)] - %s" % [trips[id][:who][i], trips[id][:note][i], trips[id][:phone][i], trips[id][:seat_taken][i], trips[id][:actual_trip][i]]
+            s = "%s \xe2\x98\x85 %s (%s) :: [%s seat(s)] - %s" % [trips[id][:who][i], trips[id][:note][i], trips[id][:phone][i], trips[id][:seat_taken][i], trips[id][:actual_trip][i]]
             puts "  |  #{s.strikethrough}"
           else
-            puts "  |  %s %s\xe2\x98\x85 (%s) :: [%s seat(s)] - %s" % [trips[id][:who][i], trips[id][:note][i], trips[id][:phone][i], trips[id][:seat_taken][i], trips[id][:actual_trip][i]]
+            puts "  |  %s \xe2\x98\x85 %s (%s) :: [%s seat(s)] - %s" % [trips[id][:who][i], trips[id][:note][i], trips[id][:phone][i], trips[id][:seat_taken][i], trips[id][:actual_trip][i]]
           end
         }
       end
