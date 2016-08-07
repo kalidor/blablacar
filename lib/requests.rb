@@ -138,5 +138,5 @@ $update_seat_req = {
   :method => Net::HTTP::Post,
   :url => "",
   :data => "count=%d",
-  :header => ["Content-Type", "application/x-www-form-urlencoded; charset=UTF-8"]
+  :header => ["Content-Type", "application/x-www-form-urlencoded; charset=UTF-8", 'x-requested-with','XMLHttpRequest']
 }

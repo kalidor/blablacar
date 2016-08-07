@@ -103,7 +103,9 @@ def setup_http_request(obj, cookie=nil, args={})
     req.add_field("Cookie", cookie)
   end
   if obj.has_key?(:header)
-    req.add_field(obj[:header][0], obj[:header][1])
+    obj[:header].each_slice(2).map{|h|
+      req.add_field(h[0], h[1])
+    }
   end
   if obj.has_key?(:data)
     if obj[:data].scan(/%[s|d]/).length > 0
@@ -741,11 +743,11 @@ class Blablacar
     end
     trip_req = setup_http_request($trip, @cookie, {:url_arg => [t_id]})
     res = @http.request(trip_req)
-    p = parse_trip(res.body)
-    req = setup_http_request($update_seat_req, @cookie, {:url => p[:seat_url], :arg => [seat.to_i]})
+    _p = parse_trip(res.body)
+    req = setup_http_request($update_seat_req, @cookie, {:url => _p[:seat_url], :arg => [seat.to_i]})
     res = @http.request(req)
     # json return
-    body = JSON.parse(res.body) #{"status":"OK","value":0}
+    body = JSON.parse(res.body) #{"status":"OK","value":<seats_number>}
     if body['status'] == "OK" and body["value"] == seat.to_i
       return true
     else
