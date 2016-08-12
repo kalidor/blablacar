@@ -7,13 +7,29 @@
 # Generic Notification class
 # All notification will heritated from it
 class Notification
-  attr_reader :desc
+  attr_reader :desc, :trip_date
   def initialize(http, cookie, data)
     @http = http
     @cookie = cookie
     @desc = data.first
     @url = data.last
     prepare(data)
+  end
+
+  # Get the date of the trip about this notification
+  #
+  # @param url [String] URL to parse
+  def get_date(url)
+    req = setup_http_request($dashboard, @cookie,{:url=>url})
+    res = @http.request(req)
+    if not res.code.to_i == 302
+      aputs "#{File.basename(__FILE__)}: line:#{__LINE__} Pas de redirection. Error somewhere"
+      return nil
+    end
+    req = setup_http_request($dashboard, @cookie,{:url=>res['location']})
+    res = @http.request(req)
+    body = res.body.force_encoding('utf-8')
+    body.scan(/<p class="my-trip-elements size16 push-left no-clear my-trip-date">\s*(.*)\s*<\/p>/).flatten.first
   end
 end
 
@@ -101,11 +117,13 @@ end
 # When you have to confirm the trip with this person
 class ValidationNotification < Notification
   attr_reader :user
+
   # Save the user who made the trip with us
   #
   # @param data [String] HTTP response body
   def prepare(data)
     @user = data.first.scan(/renseignez le code passager de (.*) pour recevoir/).flatten.first
+    @trip_date = get_date(data.last)
   end
 
   # Get the list of all user we drove with

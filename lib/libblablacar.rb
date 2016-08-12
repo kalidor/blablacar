@@ -199,7 +199,9 @@ class Blablacar
   # (Authentication Step2) Post id/passwd to the send_credentials web page
   def send_credentials
     dputs __method__.to_s
-    $ident[:data] = $ident[:data] % {:user => $CONF['user'], :pass => $CONF['pass']}
+    if $ident[:data].include?("%{user}")
+      $ident[:data] = $ident[:data] % {:user => $CONF['user'], :pass => CGI.escape($CONF['pass'])}
+    end
     login_req = setup_http_request($ident, @cookie)
     res = @http.request(login_req)
     get_cookie(res)
@@ -443,6 +445,22 @@ class Blablacar
     # looking for uniq value for each discussion (url to respond to)
     urls = body.scan(/<form id="qa"\s*class="[^"]*"\s*action="(\/messages\/respond\/[^"]*)"\s*method="POST"/).flatten
     ret = Array.new
+    # to be TESTED
+    indexes = Array.new
+    last = nil
+    urls.map{|u| indexes << body.index(u)}
+    indexes.each_slice(2).map{|id1,id2|
+      if last
+        body[last..id1]
+      end
+      if not id2
+        body[id1..-1]
+      else
+        body[id1..id2]
+        last = id2
+      end
+    }
+    # end of the TESTED part
     u = 0
     urls.map{|t|
       ind = body.index(t)+2000
@@ -455,11 +473,11 @@ class Blablacar
         msg_hours = body_.scan(/<time class="Speech-date" datetime="[^"]*">([^<]*)<\/time>/).flatten
         trips = body_.scan(/<span class="Ridename RideName--small">\(<span class="RideName-mainTrip"><span class="RideName-location RideName-location--arrowAfter">(.*)<\/span><span class="RideName-location">(.*)<\/span><\/span>\)/).flatten
         trip = (0..trips.length-1).step(2).map{|c| "#{trips[c]}->#{trips[c+1]}"}.first
-    else # 'private'
-      users = body_.scan(/<h4>\s*<strong>\s*([^:]*) :\s*<\/strong>\s*<\/h4>/).flatten # PRIVATE
-      msgs = body_.scan(/<\/h4>\s*<p>"([^"]*)"<\/p>/).flatten # PRIVATE
-      msg_hours = body_.scan(/<p class="msg-date clearfix">\s*([^<]*)\s*</).flatten.map{|m| m.strip.chomp} # PRIVATE
-    end
+      else # 'private'
+        users = body_.scan(/<h4>\s*<strong>\s*([^:]*) :\s*<\/strong>\s*<\/h4>/).flatten # PRIVATE
+        msgs = body_.scan(/<\/h4>\s*<p>"([^"]*)"<\/p>/).flatten # PRIVATE
+        msg_hours = body_.scan(/<p class="msg-date clearfix">\s*([^<]*)\s*</).flatten.map{|m| m.strip.chomp} # PRIVATE
+      end
       tmp = {:msg_user => users.first, :url => t, :token => token, :trip_date => trip_date, :trip => trip}
       tmp[:msgs] = []
       0.upto(msgs.length-1).map{|id|

@@ -123,7 +123,7 @@ if options[:message]
       puts "Mode interactif desactivé"
     else
       while true do
-        print "('q' pour quitter, entrer le numéro de la question pour y répondre >"
+        print "('q' pour quitter).\nEntrer le numéro de la question pour y répondre >"
         ind = STDIN.readline.chomp!
         if ind == "n" or ind == "next"
           break
@@ -133,6 +133,7 @@ if options[:message]
         end
         ind = ind.to_i
         found = false
+        puts all_msgs.inspect
         all_msgs.map{|k,v|
           if v[ind] != nil
             found = v[ind]
@@ -230,7 +231,8 @@ if options[:notifications]
       if notif.class == AcceptationNotification
         puts "#{notif.desc} : #{notif.trip} (#{notif.trip_date})"
       else
-        puts notif.desc
+        # en attendant qu'ils ajoutent des infos sur le trajet concerné sur la page de notation des passagers...
+        puts "%s%s" % [notif.desc, notif.trip_date ? "(Trajet: %s)"%notif.trip_date : ""]
       end
     }
   end
@@ -351,7 +353,11 @@ if options[:list]
         trips[id][:who].each_with_index{|v, i|
           if trips[id][:status][i] == "annulée"
             s = "%s \xe2\x98\x85 %s (%s) :: [%s seat(s)] - %s" % [trips[id][:who][i], trips[id][:note][i], trips[id][:phone][i], trips[id][:seat_taken][i], trips[id][:actual_trip][i]]
-            puts "  |  #{s.strikethrough}"
+            if ENV["TERM"] == "xterm"
+              puts "  |  #{s.strikethrough}"
+            else
+              puts "  |  [ANNULATION] #{s}"
+            end
           else
             puts "  |  %s \xe2\x98\x85 %s (%s) :: [%s seat(s)] - %s" % [trips[id][:who][i], trips[id][:note][i], trips[id][:phone][i], trips[id][:seat_taken][i], trips[id][:actual_trip][i]]
           end
