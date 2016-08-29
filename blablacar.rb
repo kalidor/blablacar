@@ -133,7 +133,6 @@ if options[:message]
         end
         ind = ind.to_i
         found = false
-        puts all_msgs.inspect
         all_msgs.map{|k,v|
           if v[ind] != nil
             found = v[ind]
