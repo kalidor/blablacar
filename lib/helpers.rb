@@ -1,9 +1,9 @@
 def vputs(str)
-  puts "[+] #{str}()" if $VERBOSE
+  puts "[+] #{str}" if $VERBOSE
 end
 
 def dputs(str)
-  puts "[DEBUG] #{str}()" if $DDEBUG
+  puts "[DEBUG] #{str}" if $DDEBUG
 end
 
 def eputs(str)

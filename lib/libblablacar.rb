@@ -250,7 +250,7 @@ class Blablacar
     # Step 1: We need cookie tracking :(
     get_cookie_tracking
     (aputs "Can't get Cookie tracking"; exit 1) if not @cookie
-    dputs "Get the cookie tracking: (#@cookie)"
+    vputs "Get the cookie tracking: (#{@cookie})"
     # Step 2: Post send_credentials id/passwd and get authenticated cookie
     # the cookie is the same name as previous, but the value is updated
     send_credentials()
@@ -551,7 +551,9 @@ class Blablacar
   # @return [Array] Array of URL
   def messages_parsing(body, _private=nil, all=nil)
     term = "/trajet-"
-    term = "\\/messages\\/private" if _private
+    term_re = "\\/trajet\-"
+    term = "/messages/show/" if _private
+    term_re = "\\/messages\\/show\\/" if _private
     if not all
       unread = nil
       index = body.index(/<li class="unread">\s*<a href="#{term}/)
@@ -560,7 +562,7 @@ class Blablacar
     else
       body = CGI.unescapeHTML(body)
     end
-    urls = body.scan(/<a href="(#{term}[^"]*)"/).flatten
+    urls = body.scan(/<a href="(#{term_re}[^"]*)"/).flatten
     urls
   end
 

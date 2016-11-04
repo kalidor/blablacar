@@ -68,7 +68,7 @@ $messages = {
 
 $private_messages = {
   :method => Net::HTTP::Get,
-  :url => "/messages/received",
+  :url => "/messages/list",
 }
 
 $profil_request = {
