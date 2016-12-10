@@ -122,7 +122,7 @@ class ValidationNotification < Notification
   #
   # @param data [String] HTTP response body
   def prepare(data)
-    @user = data.first.scan(/renseignez le code passager de (.*) pour recevoir/).flatten.first
+    @user = data.first.scan(/renseignez le(?:s)? code(?:.!s)?/).flatten.first
     @trip_date = get_date(data.last)
   end
 

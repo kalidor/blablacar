@@ -176,12 +176,15 @@ class Blablacar
   # @param data [Net::HTTPResponse] Net::HTTPResponse object containing HTTP headers
   def get_cookie(data)
     if data['set-cookie']
-      # don't by shy, let's take every cookie...
-      t = data['Set-Cookie'].scan(/([a-zA-Z0-9_\-\.]*=[^;]*)/).flatten
-      t.delete_if{|c| c.start_with?("path")}
-      t.delete_if{|c| c.start_with?("expires")}
+      t = []
+      data['Set-Cookie'].split(", ").map{|c|
+        t = c.scan(/([a-zA-Z0-9_\-\.]*=[^;]*)/).flatten
+        t.delete_if{|cc| cc.downcase.include?("path")}
+        t.delete_if{|cc| cc.downcase.include?("expires")}
+        t.delete_if{|cc| cc.downcase.include?("domain")}
+      }
       if t.length == 1
-        @cookie = @cookie + t.first
+        @cookie = @cookie + t.join("; ")
       else
         @cookie = t.join("; ")
       end
@@ -204,6 +207,7 @@ class Blablacar
     end
     login_req = setup_http_request($ident, @cookie)
     res = @http.request(login_req)
+    puts res.body
     get_cookie(res)
   end
 
@@ -700,7 +704,7 @@ class Blablacar
   # @param data [String] Net::HTTPResponse body
   # @return [Notification] Could be ValidationNotification, AvisNotification, AcceptationNotification or nil
   def parse_notifications(data)
-    if data.first.include?("renseignez le code passager de")
+    if data.first.match(/renseignez le(?:s)? code(?:s)? de/)
       return ValidationNotification.new(@http, @cookie, data)
     end
     if data.first.include?("laissez un avis")
@@ -864,10 +868,13 @@ class Blablacar
       raise CheckPublishedTripError, "HTTP code should be 200 here [step 2 checking]"
     end
     if res.body.force_encoding('utf-8').include?("Voir votre annonce")
+      puts "voir votre annonce"
       return true, 0
     elsif res.body.force_encoding('utf-8').include?("Votre annonce sera publiée dans quelques instants")
+      puts "votre annonce sera publiée dans qq instants"
       return true, 1
     else
+      puts "fail"
       return false
     end
   end
