@@ -178,10 +178,11 @@ class Blablacar
     if data['set-cookie']
       t = []
       data['Set-Cookie'].split(", ").map{|c|
-        t = c.scan(/([a-zA-Z0-9_\-\.]*=[^;]*)/).flatten
-        t.delete_if{|cc| cc.downcase.include?("path")}
-        t.delete_if{|cc| cc.downcase.include?("expires")}
-        t.delete_if{|cc| cc.downcase.include?("domain")}
+        tmp = c.scan(/([a-zA-Z0-9_\-\.]*=[^;]*)/).flatten
+        tmp.delete_if{|cc| cc.downcase.include?("path")}
+        tmp.delete_if{|cc| cc.downcase.include?("expires")}
+        tmp.delete_if{|cc| cc.downcase.include?("domain")}
+        t << tmp
       }
       if t.length == 1
         @cookie = @cookie + t.join("; ")
@@ -207,7 +208,6 @@ class Blablacar
     end
     login_req = setup_http_request($ident, @cookie)
     res = @http.request(login_req)
-    puts res.body
     get_cookie(res)
   end
 
