@@ -15,18 +15,18 @@ DAYS = {
 
 # French to English translation
 MONTHS = {
-  "Janvier" => "January",
-  "Février" => "February",
-  "Mars" => "March",
-  "Avril" => "April",
-  "Mai" => "May",
-  "Juin" => "June",
-  "Juillet" => "July",
-  "Août" => "August",
-  "Septembre" => "September",
-  "Octobre" => "October",
-  "Novembre" => "November",
-  "Décembre" => "December"
+  "janv." => "January",
+  "févr." => "February",
+  "mars" => "March",
+  "avr." => "April",
+  "mai" => "May",
+  "juin" => "June",
+  "juil." => "July",
+  "août" => "August",
+  "sept." => "September",
+  "oct." => "October",
+  "nov." => "November",
+  "déc." => "December"
 }
 
 # Defined reasons why we refuse this guy
