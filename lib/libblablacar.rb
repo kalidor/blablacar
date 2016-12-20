@@ -878,4 +878,24 @@ class Blablacar
       return false
     end
   end
+
+  # List my reservations
+  # @return [Hash]
+  def get_my_reservations
+    req = setup_http_request($mybookings, @cookie, {})
+    res = @http.request(req)
+    if res.code != '200'
+      puts "[?] Acces impossible a mes reservations"
+    else
+      results = []
+      body    = CGI.unescapeHTML(res.body).gsub("&rarr;", "->").force_encoding('utf-8')
+      ways    = body.scan(/<h2 class="span4">\s*(.*)\s*<\/h2>/).flatten
+      status  = body.scan(/<div class="span8 status-trip confirm-lib size16 uppercase">\s*(.*)\s*<\/div>/).flatten
+      reste   = body.scan(/<p class="overflow-hidden">\s+(.*)\s+(.*)\s+<\/p>\s+<\/li>/)
+      reste.each_slice(3).each_with_index{|c, ind|
+        results << {:way => ways[ind], :status => status[ind].strip, :when => c[0].first, :price => c[1].join(""), :who => "'%s' (%s)" % [c[2][0], c[2][1][2..-2].gsub(/\ +/, ' ')]}
+      }
+      results
+    end
+  end
 end

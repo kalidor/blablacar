@@ -140,3 +140,8 @@ $update_seat_req = {
   :data => "count=%d",
   :header => ["Content-Type", "application/x-www-form-urlencoded; charset=UTF-8", 'x-requested-with','XMLHttpRequest']
 }
+
+$mybookings = {
+  :method => Net::HTTP::Get,
+  :url => "/dashboard/my-bookings",
+}

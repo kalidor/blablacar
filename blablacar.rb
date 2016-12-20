@@ -34,6 +34,7 @@ parser = OptionParser.new do |opts|
   opts.on("-r", "--comment <comment>", "Comment on why you didn't accept this passenger on the trip") do |v| options[:comment] = v; end
   opts.on("-u", "--user user", "Validate a trip with this guy") do |v| options[:user] = v; end
   opts.on("-V", "--verbose", "Run verbosely") do |v| options[:verbose] = v; end
+  opts.on("-w", "--reservations", "Display my reservations") do |v| options[:reservations] = true; end
   opts.on("-x", "--duplicate <trip date and hour>", "Trip you want to duplicate ex: 2015/12/21 à 6h") do |v| options[:duplicate] = v; end
   opts.on("-D", "--debug", "For debug (run in proxy 127.0.0.1:8080)") do |v| options[:debug] = v; end
   opts.on_tail("-h", "--help", "Show this help message") do puts opts; exit 0; end
@@ -396,5 +397,15 @@ if options[:seats]
     puts "OK"
   else
     puts "Erreur dans la modification du nombre de place pour ce trajet"
+  end
+end
+
+if options[:reservations]
+  puts "[+] Vos réservations:"
+  blabla.get_my_reservations().map do |resa|
+    puts "%s avec %s" % [resa[:when], resa[:who]]
+    puts "%s [%s] " % [resa[:way], resa[:status]]
+    puts resa[:price]
+    puts '-' * 20
   end
 end
