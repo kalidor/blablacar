@@ -716,6 +716,9 @@ class Blablacar
     if data.first.include?("Demande de réservation de")
       return AcceptationNotification.new(@http, @cookie, data)
     end
+    if data.first.include?("Avez vous voyag")
+      return PassengerValidationNotification.new(@http, @cookie, data)
+    end
   end
 
 

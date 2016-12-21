@@ -33,6 +33,7 @@ parser = OptionParser.new do |opts|
   opts.on("-R", "--reason <REASON>", "Reason why you didn't accept this passenger on the trip. Use --reason=list to get available reasons") do |v| options[:reason] = v; end
   opts.on("-r", "--comment <comment>", "Comment on why you didn't accept this passenger on the trip") do |v| options[:comment] = v; end
   opts.on("-u", "--user user", "Validate a trip with this guy") do |v| options[:user] = v; end
+  opts.on("-v", "--valide-trip <username>", "Valide the trip with the driver") do |v| options[:valide_trip] = v; end
   opts.on("-V", "--verbose", "Run verbosely") do |v| options[:verbose] = v; end
   opts.on("-w", "--reservations", "Display my reservations") do |v| options[:reservations] = true; end
   opts.on("-x", "--duplicate <trip date and hour>", "Trip you want to duplicate ex: 2015/12/21 à 6h") do |v| options[:duplicate] = v; end
@@ -408,4 +409,17 @@ if options[:reservations]
     puts resa[:price]
     puts '-' * 20
   end
+end
+
+if options[:valide_trip]
+  puts "[+] Validation du trajet"
+  blabla.notifications.map{|notif|
+    next if not notif.class == PassengerValidationNotification
+    next if notif.user != options[:valide_trip]
+    if notif.confirm(options[:valide_trip])
+      puts "[+] Trajet confirmé, #{options[:valide_trip]} recevra son paiement"
+    else
+      puts "[!] Echec de la requête"
+    end
+  }
 end

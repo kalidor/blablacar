@@ -341,3 +341,47 @@ class AvisNotification < Notification
     send(status, note, avis, drive)
   end
 end
+
+# PassengerValidationNotification
+# When you have to confirm the trip with this person
+class PassengerValidationNotification < Notification
+  attr_reader :user
+
+  # Save the user who made the trip with us
+  #
+  # @param data [String] HTTP response body
+  def prepare(data)
+    @user = data.first.scan(/Avez vous voyag. avec (.*) sur le trajet (.*) ?/).flatten.first
+    @trip_date = get_date(data.last)
+  end
+
+  # Get the link to validate the trip (passenger mode)
+  #
+  # @return [Boolean] if succeed: true, else: false
+  def get_link_to_confirm
+    dputs __method__.to_s
+    get_confirm_req = setup_http_request($dashboard, @cookie, {:url=>@url})
+    res = @http.request(get_confirm_req)
+    loc = res['location']
+    get_confirm_req = setup_http_request($dashboard, @cookie, {:url=>loc})
+    res = @http.request(get_confirm_req)
+    return res.body.scan(/<a href="(\/seat-passenger-confirm\/[^"]*)" class="btn-acceptation">\s*Oui\s*<\/a>/).flatten.first
+  end
+
+  # Validate the trip
+  #
+  # @return [Boolean] if succeed: true, else: false
+  def confirm
+    url = get_link_to_confirm()
+    get_confirm_req = setup_http_request($dashboard, @cookie, {:url=>url})
+    res = @http.request(get_confirm_req)
+    if res.code == '302'
+      get_confirm_req = setup_http_request($dashboard, @cookie, {:url=>url})
+      res = @http.request(get_confirm_req)
+      if res.include?("Voyage fait")
+        return true
+      end
+    end
+    return false
+  end
+end
