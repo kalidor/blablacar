@@ -407,6 +407,9 @@ if options[:reservations]
     puts "%s avec %s" % [resa[:when], resa[:who]]
     puts "%s [%s] " % [resa[:way], resa[:status]]
     puts resa[:price]
+    if resa[:status] == "Acceptée"
+      puts "Infos : %s" % resa[:infos]
+    end
     puts '-' * 20
   end
 end
