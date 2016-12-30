@@ -890,11 +890,15 @@ class Blablacar
     if res.code != '200'
       puts "[?] Acces impossible a mes reservations"
     else
-      body = res.body.gsub("&rdquo;","").gsub("&ldquo;","").force_encoding('utf-8')
-      _start = body.index('<p class="showmore"')
+      body = CGI.unescapeHTML(res.body).gsub("&rdquo;","").gsub("&ldquo;","").force_encoding('utf-8')
+      depart_arrivee = body.scan(/<i class="bbc-icon2-circle first size20 location-circle [green|red]+" aria-hidden="true"><\/i>\s*<strong>\s*(.*)\s*<\/strong>\s*<\/div>/).flatten
+      _start = body.index('<p class="showmore">') + '<p class="showmore">'.length
       _end = body[_start..-1].index("</div>") + _start
       body = body[_start.._end-5]
-      return body.split("<br />")[1..-1].join("").gsub("</p>","").gsub("\n", " ")
+      infos = body.split("<br />")[0..-1].join("").gsub("</p>","").gsub("\n", " ")
+      infos.gsub!('<span class="showmore-ellipsis">...</span><span class="showmore-rest">', '')
+      infos = infos.split("</span>").first
+      return [depart_arrivee, infos]
     end
     return ""
   end
@@ -916,11 +920,11 @@ class Blablacar
       urls     = body.scan(/<a href="(\/dashboard\/manage-my-booking\/[^"]*)"/).flatten
       reste.each_slice(3).each_with_index{|c, ind|
         if status[ind]== "Acceptée"
-          infos = get_info_about_reservation(urls[ind])
+          depart_arrivee, infos = get_info_about_reservation(urls[ind])
         else
           infos = ""
         end
-        results << {:way => ways[ind], :status => status[ind], :when => c[0].first, :price => c[1].join(""), :who => "'%s' (%s)" % [c[2][0], c[2][1][2..-2].gsub(/\ +/, ' ')], :infos => infos}
+        results << {:way => ways[ind], :status => status[ind], :when => c[0].first, :price => c[1].join(""), :who => "'%s' (%s)" % [c[2][0], c[2][1][2..-2].gsub(/\ +/, ' ')], :lieux => depart_arrivee, :infos => infos}
       }
       results
     end

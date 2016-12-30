@@ -405,9 +405,9 @@ if options[:reservations]
   puts "[+] Vos réservations:"
   blabla.get_my_reservations().map do |resa|
     puts "%s avec %s" % [resa[:when], resa[:who]]
-    puts "%s [%s] " % [resa[:way], resa[:status]]
-    puts resa[:price]
+    puts "%s [%s] (%s)" % [resa[:way], resa[:status], resa[:price]]
     if resa[:status] == "Acceptée"
+      puts "Depart: %s\nArrivee: %s" % resa[:lieux]
       puts "Infos : %s" % resa[:infos]
     end
     puts '-' * 20
