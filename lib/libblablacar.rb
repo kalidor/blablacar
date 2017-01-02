@@ -883,7 +883,7 @@ class Blablacar
   end
 
   # Get information about reservations
-  # @return [Hash]
+  # @return [Array]
   def get_info_about_reservation(url_res)
     req = setup_http_request($mybookings, @cookie, {:url => url_res})
     res = @http.request(req)
@@ -908,6 +908,19 @@ class Blablacar
     return ""
   end
 
+  # Get passengers for a trip
+  # @return [Array]
+  def list_passengers(url)
+    req = setup_http_request($dashboard, @cookie, {:url => url})
+    res = @http.request(req)
+    if res.code != '200'
+      puts "[?] Acces impossible a mes reservations"
+      return ["erreur de la récupération des passagers"]
+    else
+      body = CGI.unescapeHTML(res.body).force_encoding('utf-8')
+      return body.scan(/<li class="Booking-occupant">\s*<img class="PhotoWrapper-user PhotoWrapper-user--smaller tip u-block u-rounded" title="([^"]*)" alt="[^"]*"/).flatten
+    end
+  end
 
   # List my reservations
   # @return [Hash]
@@ -922,16 +935,17 @@ class Blablacar
       ways    = body.scan(/<h2 class="span4">\s*(.*)\s*<\/h2>/).flatten
       status  = body.scan(/<div class="span8 status-trip confirm-lib size16 uppercase">\s*(.*)\s*<\/div>/).flatten.map{|c| c.strip}
       reste   = body.scan(/<p class="overflow-hidden">\s+(.*)\s+(.*)\s+<\/p>\s+<\/li>/)
-      urls     = body.scan(/<a href="(\/dashboard\/manage-my-booking\/[^"]*)"/).flatten
+      urls    = body.scan(/<a href="(\/dashboard\/manage-my-booking\/[^"]*)"/).flatten
       reste.each_slice(3).each_with_index{|c, ind|
         if status[ind]== "Acceptée"
           code, depart_arrivee, infos = get_info_about_reservation(urls[ind])
+          passengers = list_passengers(body.scan(/<a href="(\/trajet-[^"]*)" class="look blue">\s*Voir l'annonce/).flatten[ind])
         else
           infos = ""
           depart_arrivee = "introuvable"
           code = "introuvable"
         end
-        results << {:way => ways[ind], :status => status[ind], :when => c[0].first, :price => c[1].join(" "), :who => "'%s' (%s)" % [c[2][0], c[2][1][2..-2].gsub(/\ +/, ' ')], :lieux => depart_arrivee, :infos => infos, :code => code}
+        results << {:way => ways[ind], :status => status[ind], :when => c[0].first, :price => c[1].join(" "), :who => "'%s' (%s)" % [c[2][0], c[2][1][2..-2].gsub(/\ +/, ' ')], :lieux => depart_arrivee, :infos => infos, :code => code, :passengers => passengers}
       }
       results
     end

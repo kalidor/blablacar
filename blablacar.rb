@@ -414,6 +414,7 @@ if options[:reservations]
     if resa[:status] == "Acceptée" and options[:resa_verbose]
       puts " | %s -> %s" % resa[:lieux]
       puts " | Infos : %s" % resa[:infos]
+      puts " | Passagers : %s" % resa[:passengers].join(", ")
     end
     puts
   end
