@@ -35,7 +35,7 @@ parser = OptionParser.new do |opts|
   opts.on("-u", "--user user", "Validate a trip with this guy") do |v| options[:user] = v; end
   opts.on("-v", "--valide-trip <username>", "Valide the trip with the driver") do |v| options[:valide_trip] = v; end
   opts.on("-V", "--verbose", "Run verbosely") do |v| options[:verbose] = v; end
-  opts.on("-w", "--reservations", "Display my reservations") do |v| options[:reservations] = true; end
+  opts.on("-w", "--reservations", "Display my reservations (just few infos). Use -V to display all info") do |v| options[:reservations] = true; end
   opts.on("-x", "--duplicate <trip date and hour>", "Trip you want to duplicate ex: 2015/12/21 à 6h") do |v| options[:duplicate] = v; end
   opts.on("-D", "--debug", "For debug (run in proxy 127.0.0.1:8080)") do |v| options[:debug] = v; end
   opts.on_tail("-h", "--help", "Show this help message") do puts opts; exit 0; end
@@ -72,6 +72,11 @@ class String
   def strikethrough
     "\e[9m#{self}\e[0m"
   end
+end
+
+if options[:reservations] and options[:verbose]
+  options[:verbose] = nil
+  options[:resa_verbose] = true
 end
 
 vputs "Starting: %s" % Time.now.to_s
@@ -404,13 +409,13 @@ end
 if options[:reservations]
   puts "[+] Vos réservations:"
   blabla.get_my_reservations().map do |resa|
-    puts "%s avec %s" % [resa[:when], resa[:who]]
-    puts "%s [%s] (%s)" % [resa[:way], resa[:status], resa[:price]]
-    if resa[:status] == "Acceptée"
-      puts "Depart: %s\nArrivee: %s" % resa[:lieux]
-      puts "Infos : %s" % resa[:infos]
+    puts "%s avec %s [%s]" % [resa[:when], resa[:who], resa[:code]]
+    puts " | %s [%s] (%s)" % [resa[:way], resa[:status], resa[:price]]
+    if resa[:status] == "Acceptée" and options[:resa_verbose]
+      puts " | %s -> %s" % resa[:lieux]
+      puts " | Infos : %s" % resa[:infos]
     end
-    puts '-' * 20
+    puts
   end
 end
 

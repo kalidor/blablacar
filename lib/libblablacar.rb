@@ -896,15 +896,14 @@ class Blablacar
       if _start
         _start = _start + '<p class="showmore">'.length
         _end = body[_start..-1].index("</div>") + _start
-        body = body[_start.._end-5]
-        infos = body.split("<br />")[0..-1].join("").gsub("</p>","").gsub("\n", " ")
+        infos = body[_start.._end-5].split("<br />")[0..-1].join("").gsub("</p>","").gsub("\n", " ")
         infos.gsub!('<span class="showmore-ellipsis">...</span><span class="showmore-rest">', '')
         infos = infos.split("</span>").first
       else
         infos = "Pas d'informations"
       end
-
-      return [depart_arrivee, infos]
+      code = body.scan(/<span class="text-code">([^<]*)<\/span>/).flatten.first
+      return [code, depart_arrivee, infos]
     end
     return ""
   end
@@ -926,11 +925,13 @@ class Blablacar
       urls     = body.scan(/<a href="(\/dashboard\/manage-my-booking\/[^"]*)"/).flatten
       reste.each_slice(3).each_with_index{|c, ind|
         if status[ind]== "Acceptée"
-          depart_arrivee, infos = get_info_about_reservation(urls[ind])
+          code, depart_arrivee, infos = get_info_about_reservation(urls[ind])
         else
           infos = ""
+          depart_arrivee = "introuvable"
+          code = "introuvable"
         end
-        results << {:way => ways[ind], :status => status[ind], :when => c[0].first, :price => c[1].join(""), :who => "'%s' (%s)" % [c[2][0], c[2][1][2..-2].gsub(/\ +/, ' ')], :lieux => depart_arrivee, :infos => infos}
+        results << {:way => ways[ind], :status => status[ind], :when => c[0].first, :price => c[1].join(" "), :who => "'%s' (%s)" % [c[2][0], c[2][1][2..-2].gsub(/\ +/, ' ')], :lieux => depart_arrivee, :infos => infos, :code => code}
       }
       results
     end
