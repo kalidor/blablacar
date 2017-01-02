@@ -892,12 +892,18 @@ class Blablacar
     else
       body = CGI.unescapeHTML(res.body).gsub("&rdquo;","").gsub("&ldquo;","").force_encoding('utf-8')
       depart_arrivee = body.scan(/<i class="bbc-icon2-circle first size20 location-circle [green|red]+" aria-hidden="true"><\/i>\s*<strong>\s*(.*)\s*<\/strong>\s*<\/div>/).flatten
-      _start = body.index('<p class="showmore">') + '<p class="showmore">'.length
-      _end = body[_start..-1].index("</div>") + _start
-      body = body[_start.._end-5]
-      infos = body.split("<br />")[0..-1].join("").gsub("</p>","").gsub("\n", " ")
-      infos.gsub!('<span class="showmore-ellipsis">...</span><span class="showmore-rest">', '')
-      infos = infos.split("</span>").first
+      _start = body.index('<p class="showmore"')
+      if _start
+        _start = _start + '<p class="showmore">'.length
+        _end = body[_start..-1].index("</div>") + _start
+        body = body[_start.._end-5]
+        infos = body.split("<br />")[0..-1].join("").gsub("</p>","").gsub("\n", " ")
+        infos.gsub!('<span class="showmore-ellipsis">...</span><span class="showmore-rest">', '')
+        infos = infos.split("</span>").first
+      else
+        infos = "Pas d'informations"
+      end
+
       return [depart_arrivee, infos]
     end
     return ""
