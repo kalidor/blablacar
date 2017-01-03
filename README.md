@@ -13,6 +13,7 @@ Here is what it works:
 
 List planned trip:
 ```bash
+% blablacar.rb -l
 Lyon -> Annecy (Vendredi 18 Dec à 17:50). Trip seen 56 times
   |  [COMPLETE]
   |  Hugo K (21 ans) 4.4★ (XX XX XX XX XX) :: [1 seat(s)] - Lyon -> Annecy
@@ -20,11 +21,28 @@ Lyon -> Annecy (Vendredi 18 Dec à 17:50). Trip seen 56 times
   |  Christophe R (27 ans) 4.5★ (XX XX XX XX XX) :: [1 seat(s)] - Lyon -> Annecy
 ```
 
+List my reservations:
+```bash
+% blablacar.rb -w
+[+] Authentifié
+[+] Vos réservations:
+Aujourd'hui à 06:20 avec 'Violaine S' (XX XX XX XX XX ) [introuvable]
+ | Annecy -> Lyon [confirmée] (1 place - 9,50 €)
+
+Aujourd'hui à 18:20 avec 'Celine S' (XX XX XX XX XX ) [DVEBHA]
+ | Lyon -> Annecy [Acceptée] (1 place - 11,00 €)
+
+jeu. 05 janv. à 06:40 avec 'Laurent R' (XX XX XX XX XX ) [ZCOXYA]
+ | Annecy -> Écully [Acceptée] (1 place - 11,00 €)
+
+jeu. 05 janv. à 18:20 avec 'Celine S' (XX XX XX XX XX ) [HOYGYA]
+ | Lyon -> Annecy [Acceptée] (1 place - 11,00 €)
+```
+
 Show notifications:
 ```bash
-[8:19 ~/bin/blabla:master]% ./blablacar.rb -N
-[+] Starting: 2015-10-15 08:19:43 +0200
-[+] Authenticated!
+% ./blablacar.rb -N
+[+] Authentifié
 Notifications:
 Apres votre voyage Annecy-Bron, renseignez le code passager de Christel C pour recevoir €9 rapidement.
 Apres votre voyage Bron-Annecy, renseignez le code passager de Rodolphe B pour recevoir €9 rapidement.
@@ -34,39 +52,24 @@ Apres votre voyage Bron-Annecy, laissez un avis a votre passager Frederic O
 
 Register code to confirm we had a trip with "Christophe R":
 ```bash
-[8:19 ~/bin/blabla:master]% ./blablacar.rb --user "Christophe R" --code GIRSXK
-[+] Starting: 2015-10-15 08:20:03 +0200
-[+] Authenticated!
+% blablacar.rb --user "Christophe R" --code GIRSXK
+[+] Authentifié
 Apres votre voyage Bron-Annecy, renseignez le code passager de Christophe R pour recevoir €9 rapidement.
 [+] Code ok pour Christophe R
 ```
 
-Show payment status:
-```bash
-[8:20 ~/bin/blabla:master]% ./blablacar.rb -s
-Transfer successfully requested
-Money status (lastpage):
-  INN H (1 place - 9 €) - Annecy -> Lyon [Virement en cours]
-  TNT A (1 place - 6 €) - Lyon -> Chambéry [Virement en cours]
-  SYT C (1 place - 9 €) - Annecy -> Lyon [Virement en cours]
-  SYH K (1 place - 9 €) - Annecy -> Lyon [Virement en cours]
-  OAI E (2 places - 18 €) - Bron -> Annecy [Verifications en cours]
-  FDN R (1 place - 9 €) - Lyon -> Annecy [Virement effectué le 04/12/2015]
-  UOK S (2 places - 6 €) - Lyon -> Chambéry [Virement effectué le 04/12/2015]
-```
-
 Send an opinion about a passenger / driver:
 ```bash
-[8:40 ~/bin/blabla:master]% ./blablacar.rb -p --user "Christophe R" --avis "Sympa, ponctuel. Des discussions vraiment interessantes\!\! Je recommande" --note 5
-[+] Starting: 2015-10-15 08:41:12 +0200
-[+] Authenticated!
+% blablacar.rb -p --user "Christophe R" --avis "Sympa, ponctuel. Des discussions vraiment interessantes\!\! Je recommande" --note 5
+[+] Authentifié
 Apres votre voyage Bron-Annecy, laissez un avis a votre passager Christophe R
 Avis envoye
 ```
+
 Multiple option in one command line:
 ```
-[20:51 ~/Codes/blablacar]% ./blablacar.rb -lNMm
-[+] Authenticated
+% blablacar.rb -lNMm
+[+] Authentifié
 No new messages  # -m
 Notification:    # -N
 Après votre voyage Lyon-Annecy, laissez un avis à votre passager Arthur D
@@ -79,22 +82,36 @@ No future planned trip(s)
 
 Ask for transfert money:
 ```
-[11:00 ~/Codes/blablacar]% ./blablacar.rb -t
-[+] Authenticated
+% blablacar.rb -t
+[+] Authentifié
 Transfer successfully requested
+```
+Show payment status:
+```bash
+% blablacar.rb -s
+[+] Authentifié
+Transfer successfully requested
+Money status (lastpage):
+  INN H (1 place - 9 €) - Annecy -> Lyon [Virement en cours]
+  TNT A (1 place - 6 €) - Lyon -> Chambéry [Virement en cours]
+  SYT C (1 place - 9 €) - Annecy -> Lyon [Virement en cours]
+  SYH K (1 place - 9 €) - Annecy -> Lyon [Virement en cours]
+  OAI E (2 places - 18 €) - Bron -> Annecy [Verifications en cours]
+  FDN R (1 place - 9 €) - Lyon -> Annecy [Virement effectué le 04/12/2015]
+  UOK S (2 places - 6 €) - Lyon -> Chambéry [Virement effectué le 04/12/2015]
 ```
 
 Update seat for a trip (set up 2 seats for this trip):
 ```
-[11:00 ~/Codes/blablacar]% ./blablacar.rb -T "2015/12/14" -S 2
-[+] Authenticated
+% blablacar.rb -T "2015/12/14" -S 2
+[+] Authentifié
 OK
 ```
 
 Duplicate trip:
 ```
-[11:00 ~/Codes/blablacar]% ./blablacar.rb --duplicate "2015/12/12 à 6h" --trip "2015/12/14 à 6h"
-[+] Authenticated
+% blablacar.rb --duplicate "2015/12/12 à 6h" --trip "2015/12/14 à 6h"
+[+] Authentifié
 [+] Trip is being processed...
 [+] Trip duplicated
 ```
