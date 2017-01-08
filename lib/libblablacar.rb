@@ -933,19 +933,29 @@ class Blablacar
       results = []
       body    = CGI.unescapeHTML(res.body).gsub("&rarr;", "->").force_encoding('utf-8')
       ways    = body.scan(/<h2 class="span4">\s*(.*)\s*<\/h2>/).flatten
-      status  = body.scan(/<div class="span8 status-trip confirm-lib size16 uppercase">\s*(.*)\s*<\/div>/).flatten.map{|c| c.strip}
+      status  = body.scan(/<div class="span8 status-trip (?:confirm-lib)?(?:wait-lib)? size16 uppercase">\s*(.*)\s*<\/div>/).flatten.map{|c| c.strip}
       reste   = body.scan(/<p class="overflow-hidden">\s+(.*)\s+(.*)\s+<\/p>\s+<\/li>/)
       urls    = body.scan(/<a href="(\/dashboard\/manage-my-booking\/[^"]*)"/).flatten
       reste.each_slice(3).each_with_index{|c, ind|
-        if status[ind]== "Acceptée"
+        if status[ind] == "Acceptée"
           code, depart_arrivee, infos = get_info_about_reservation(urls[ind])
           passengers = list_passengers(body.scan(/<a href="(\/trajet-[^"]*)" class="look blue">\s*Voir l'annonce/).flatten[ind])
+        elsif status[ind] == "En attente d'acceptation"
+          # code should be nil
+          code, depart_arrivee, infos = get_info_about_reservation(urls[ind])
+          passengers = []
         else
           infos = ""
           depart_arrivee = "introuvable"
           code = "introuvable"
         end
-        results << {:way => ways[ind], :status => status[ind], :when => c[0].first, :price => c[1].join(" "), :who => "'%s' (%s)" % [c[2][0], c[2][1][2..-2].gsub(/\ +/, ' ')], :lieux => depart_arrivee, :infos => infos, :code => code, :passengers => passengers}
+        tel = c[2]
+        if tel[1] and tel[1].length > 1
+          tel = tel[1][2..-2].gsub(/\ +/, ' ')
+        else
+          tel = ""
+        end
+        results << {:way => ways[ind], :status => status[ind], :when => c[0].first, :price => c[1].join(" "), :who => "'%s' (%s)" % [c[2][0], tel], :lieux => depart_arrivee, :infos => infos, :code => code, :passengers => passengers}
       }
       results
     end

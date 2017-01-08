@@ -411,7 +411,7 @@ if options[:reservations]
   blabla.get_my_reservations().map do |resa|
     puts "%s avec %s [%s]" % [resa[:when], resa[:who], resa[:code]]
     puts " | %s [%s] (%s)" % [resa[:way], resa[:status], resa[:price]]
-    if resa[:status] == "Acceptée" and options[:resa_verbose]
+    if (resa[:status] == "Acceptée" or resa[:status] == "En attente d'acceptation") and options[:resa_verbose]
       puts " | %s -> %s" % resa[:lieux]
       puts " | Infos : %s" % resa[:infos]
       puts " | Passagers : %s" % resa[:passengers].join(", ")
