@@ -944,6 +944,10 @@ class Blablacar
           # code should be nil
           code, depart_arrivee, infos = get_info_about_reservation(urls[ind])
           passengers = []
+        elsif status[ind].downcase == "confirmée"
+          code, depart_arrivee, infos = get_info_about_reservation(urls[ind])
+          code = "FAIT"
+          passengers = []
         else
           infos = ""
           depart_arrivee = "introuvable"
