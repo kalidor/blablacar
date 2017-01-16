@@ -122,7 +122,7 @@ class ValidationNotification < Notification
   #
   # @param data [String] HTTP response body
   def prepare(data)
-    @user = data.first.scan(/renseignez le(?:s)? code(?:.!s)?/).flatten.first
+    @user = data.first.scan(/renseignez le(?:s)? code(?:.!s)? (?:passager)? de ([^p]*) pour/).flatten.first
     @trip_date = get_date(data.last)
   end
 
@@ -270,7 +270,7 @@ class AvisNotification < Notification
   #
   # @param data [String] HTTP response body
   def prepare(data)
-    @user = data.first.scan(/laissez un avis . votre passager (.*)/).flatten.first
+    @user = data.first.scan(/laissez un avis . votre (?:passager)?(?:conducteur)? (.*)/).flatten.first
   end
 
   # Generic method to send an avis about the driver/passenger
@@ -285,32 +285,36 @@ class AvisNotification < Notification
     req = setup_http_request($avis_req_get, @cookie, {:url => @url})
     res = @http.request(req)
     if not res['location']
-      puts "Uh I'm not being redirected?... What a failure!"
+      puts "#{__LINE__} Uh I'm not being redirected?... What a failure!"
       return nil
     end
+    url = res['location']
     # on est redirigé
     loc = res['location']
     req = setup_http_request($avis_req_get, @cookie, {:url => loc})
     res = @http.request(req)
-    url = res.body.scan(/<form class="[^"]*" action="(\/dashboard\/ratings\/.*)" method="POST"/).flatten.first
     token = res.body.scan(/<input type="hidden" id="rating__token" name="rating\[_token\]" value="([^"]*)" \/>/).flatten.first
     # post for previsualisation
-    req = setup_http_request($avis_req_post, @cookie, {:url => url, :arg => [status, note, comment, token]})
+    if driver
+      req = setup_http_request($avis_driver_req_post, @cookie, {:url => url, :arg => [note, comment, driver, token]})
+    else
+      req = setup_http_request($avis_req_post, @cookie, {:url => url, :arg => [note, comment, token]})
+    end
     res = @http.request(req)
     if not res['location']
-      puts "Uh I'm not being redirected?... What a failure!"
+      puts "#{__LINE__} Uh I'm not being redirected?... What a failure!"
       return nil
     end
-    req = setup_http_request($avis_req_get, @cookie, {:url => res['location']})
+    url = res['location']
+    req = setup_http_request($avis_req_get, @cookie, {:url => url})
     res = @http.request(req)
-    url = res.body.scan(/<form class="[^"]*" action="(\/dashboard\/ratings\/.*)" method="POST"/).flatten.first
     token = res.body.scan(/name="rating_preview\[_token\]" value="([^"]*)" \/>/).flatten.first
-    req = setup_http_request($avis_req_post_confirm, @cookie, {:url => url, :arg => [status, note, CGI.escape(comment), token]})
-    res = @http.request(req)
-    if not res['location']
-      puts "Uh I'm not being redirected?... What a failure!"
-      return nil
+    if driver
+      req = setup_http_request($avis_driver_req_post_confirm, @cookie, {:url => url, :arg => [status, note, CGI.escape(comment), driver, token]})
+    else
+      req = setup_http_request($avis_req_post_confirm, @cookie, {:url => url, :arg => [status, note, CGI.escape(comment), token]})
     end
+    res = @http.request(req)
     if res['location'].match(/\/dashboard\/ratings\/saved\/([^\/]+)/) or
       res['location'] == "/dashboard/ratings/hints"
       return true

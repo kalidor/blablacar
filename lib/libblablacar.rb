@@ -641,33 +641,37 @@ class Blablacar
     res = @http.request(req)
     res=JSON.parse(res.body)['html']['results'].force_encoding('utf-8')
     results = []
-    url = res.scan(/<meta itemprop="url" content="([^>]*)">/)
+    url = res.scan(/<meta itemprop="url" content="([^>]*)">/).flatten
     user = res.scan(/<div class="user-info">\s*<h2 class="username">(.*)<\/h2>\s*/)#(.*)<br \/>\s*<\/div>/)
-    prefs = res.scan(/ <div class=\"preferences-container\">\s*((?:<span class="[^ ]* prefs tip" title=".*"><\/span>)*)\s*((?:<span class="[^ ]* prefs tip" title=".*"><\/span>)*)\s*((?:<span class="[^ ]* prefs tip" title=".*"><\/span>)*)\s*((?:<span class="[^ ]* prefs tip" title=".*"><\/span>)*)/)
-    trip_time = res.scan(/<h3 class="time light-gray" itemprop="startDate" content="([^"]*)">(.*)<\/h3>/)
+    user = res.scan(/<strong class="MemberCard-name u-block">([^<]*)<\/strong>/).flatten
+    user_bis = res.scan(/<h2 class="ProfileCard-info ProfileCard-info--name u-truncate">\s*(.*)\s*<\/h2>/).flatten
+    users = user+user_bis
+    #prefs = res.scan(/ <div class=\"preferences-container\">\s*((?:<span class="[^ ]* prefs tip" title=".*"><\/span>)*)\s*((?:<span class="[^ ]* prefs tip" title=".*"><\/span>)*)\s*((?:<span class="[^ ]* prefs tip" title=".*"><\/span>)*)\s*((?:<span class="[^ ]* prefs tip" title=".*"><\/span>)*)/)
+    trip_time = res.scan(/<h3 class="time light-gray" itemprop="startDate" content="([^"]*)">\s*(.*)\s*<\/h3>/)
     trip = res.scan(/<span class="from trip-roads-stop">(.*)<\/span>\s*<span class="arrow-ie">.*<\/span>\s*<span class="trip-roads-stop">([^<]*)<\/span>/)
-    start = res.scan(/<dd class="tip" title="D.part">\s*(.*)\s*<\/dd>/)
-    stop = res.scan(/<dd class="tip" title="Arriv.e">\s*(.*)\s*<\/dd>/)
-    car = res.scan(/<dd class="tip" title="Arriv.e">\s*.*\s*<\/dd>\s*<\/dl>\s*((?:<dl class="car-type" [^>]*>\s*<dt>V.hicule : <strong>.*<\/strong><\/dt>)){0,1}/)
+    start = res.scan(/<dd class="js-tip-custom" title="D.part">\s*(.*)\s*<\/dd>/).flatten
+    stop = res.scan(/<dd class="js-tip-custom" title="Arriv.e">\s*(.*)\s*<\/dd>/).flatten
+    #car = res.scan(/<dd class="js-tip-custom" title="Arriv.e">\s*.*\s*<\/dd>\s*<\/dl>\s*((?:<dl class="car-type" [^>]*>\s*<dt>V.hicule : <strong>.*<\/strong><\/dt>)){0,1}/)
     #car = res.scan(/Véhicule : <strong>(.*)<\/strong><\/dt>/)
-    place = res.scan(/<div class="availability">\s*<strong>(.*)<\/strong>((?: <span>.*<\/span>){0,1})/)
-    price = res.scan(/<div class="price price-[^"]+" itemprop="location">\s*<strong>\s*<span>\s*(\d+).*\s*<\/span>/)
-    acceptation = res.scan(/title="Acceptation : ([^"]+)"/)
+    place = res.scan(/<div class="availability">\s*<strong>(.*)<\/strong>(?: <span>.*<\/span>){0,1}/).flatten
+    price = res.scan(/<div class="price price-[^"]+" itemprop="location">\s*<strong>\s*<span class="" >\s*(\d+)*<span class="size20">(,[^<]*)<\/span>/)
+    acceptation = res.scan(/title="Acceptation : ([^"]+)"/).flatten
     url.each_with_index{|u, ind|
       results[ind] = {
-        :url => u.first,
-        :user => user[ind].first,
-        :preferences => prefs[ind].map{|p| p.scan(/<span class=".*" title="(.*)"><\/span>/)}.flatten,
+        :url => u[ind],
+        :user => users[ind],
+        #:preferences => prefs[ind].map{|p| p.scan(/<span class=".*" title="(.*)"><\/span>/)}.flatten,
         :time => trip_time[ind].join(" "),
         :trip => trip[ind].join(" -> "),
-        :start => start[ind].first,
-        :stop => stop[ind].first,
-        :car => car[ind].first ==nil ? "no info" : car[ind].first.scan(/hicule : <strong>(.*)<\/strong>/).flatten.first,
-        :place => place[ind].first=="Complet" ? "Complet" : "%s disponible(s)"%place[ind].first,
-        :price => "%s €" % price[ind].first,
-        :acceptation => acceptation[ind].first
+        :start => start[ind],
+        :stop => stop[ind],
+        #:car => car[ind].first ==nil ? "no info" : car[ind].first.scan(/hicule : <strong>(.*)<\/strong>/).flatten.first,
+        :place => place[ind]=="Complet" ? "Complet" : "%s disponible(s)"%place[ind],
+        :price => "%s" % price[ind].join(""),
+        :acceptation => acceptation[ind]
       }
     }
+    puts "[+] Got results"
     results
   end
 
@@ -704,7 +708,7 @@ class Blablacar
   # @param data [String] Net::HTTPResponse body
   # @return [Notification] Could be ValidationNotification, AvisNotification, AcceptationNotification or nil
   def parse_notifications(data)
-    if data.first.match(/renseignez le(?:s)? code(?:s)? de/)
+    if data.first.match(/renseignez le(?:s)? code(?:s)?/)
       return ValidationNotification.new(@http, @cookie, data)
     end
     if data.first.include?("laissez un avis")

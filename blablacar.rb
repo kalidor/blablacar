@@ -18,7 +18,7 @@ parser = OptionParser.new do |opts|
   opts.on("-g", "--avis-recu [PAGE]", "Display user opinion") do |v| options[:avis_recu] = v || ''; end
   opts.on("-c", "--code <CODE>", "Code to validate a trip") do |v| options[:code] = v; end
   opts.on("-A", "--accept", "Accept passenger on a trip") do |v| options[:acceptation] = v; end
-  opts.on("-d", "--driver", "Driver name to evaluate and leave an opinion") do |v| options[:driver] = v; end
+  opts.on("-d", "--driver <NOTE>", "Driver name to evaluate and leave an opinion") do |v| options[:driver] = v.to_i; end
   opts.on("-l", "--list", "List planned trip with passengers") do |v| options[:list] = v; end
   opts.on("-n", "--note <NOTE>", "Send evaluation note to a user") do |v| options[:note] = v; end
   opts.on("-i", "--interactive <ON/OFF>", "Enable/disable interactive mode (default is ENABLED)") do |v| options[:interactive] = v; end
@@ -77,6 +77,10 @@ end
 if options[:reservations] and options[:verbose]
   options[:verbose] = nil
   options[:resa_verbose] = true
+end
+if options[:driver] and (options[:driver] > 3 or options[:driver] <= 0)
+  puts "Les notes disponibles pour la conduite sont: Bonne conduite (3), Moyenne (2), Mauvaise (1)"
+  exit
 end
 
 vputs "Starting: %s" % Time.now.to_s
@@ -301,8 +305,14 @@ if options[:avis]
   notif = notif.delete_if{|c| c == nil}.first
   if notif.instance_of?(AvisNotification)
     puts notif.desc
-    if notif.send(s, options[:note], options[:avis])
-      puts "Opinion envoyée"
+    if s == "P"
+      if notif.send(s, options[:note], options[:avis])
+        puts "Opinion envoyée"
+      end
+    else
+      if notif.send(s, options[:note], options[:avis], options[:driver])
+        puts "Opinion envoyée"
+      end
     end
   end
 end
