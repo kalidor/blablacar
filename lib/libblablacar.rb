@@ -680,7 +680,7 @@ class Blablacar
   def parse_dashboard
     dputs __method__.to_s
     # Don't need to parse the all page to get message received...
-    msg = @dashboard.scan(/"\/messages\/list" rel="nofollow">\s*<span class="badge-notification">(\d+)<\/span>\s*<span class="visually-hidden">[^<]*<\/span>/).flatten.first
+    msg = @dashboard.scan(/"\/messages\/list">Messages\s*<span[^>]*>(\d+)<\/span>/).flatten.first
     tmp =@dashboard.scan(/class="text-notification-container">\s*<p>\s*(?:<strong>)?(.*)(?:<\/strong>\s*<br\/>)?\s*.*\s*<\/p>\s*<\/div>\s*<div class="btn-notification-container">\s*<a href="(\/dashboard\/notifications\/.*)" class="btn-validation">\s*.*\s*<\/a>/).map{|c| c if not c[1].include?("virement")}.delete_if{|c| c==nil}.map{|c| [c[0],c[1]]}
     tmp.map{|t|
       ret = parse_notifications(t)
@@ -938,7 +938,7 @@ class Blablacar
       body    = CGI.unescapeHTML(res.body).gsub("&rarr;", "->").force_encoding('utf-8')
       ways    = body.scan(/<h2 class="span4">\s*(.*)\s*<\/h2>/).flatten
       status  = body.scan(/<div class="span8 status-trip (?:confirm-lib)?(?:wait-lib)? size16 uppercase">\s*(.*)\s*<\/div>/).flatten.map{|c| c.strip}
-      reste   = body.scan(/<p class="overflow-hidden">\s+(.*)\s+(.*)\s+<\/p>\s+<\/li>/)
+      reste   = body.scan(/<p class="u-overflowHidden">\s+(.*)\s+(.*)\s+<\/p>\s+<\/li>/)
       urls    = body.scan(/<a href="(\/dashboard\/manage-my-booking\/[^"]*)"/).flatten
       reste.each_slice(3).each_with_index{|c, ind|
         if status[ind] == "Acceptée"
