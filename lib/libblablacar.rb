@@ -937,7 +937,7 @@ class Blablacar
       results = []
       body    = CGI.unescapeHTML(res.body).gsub("&rarr;", "->").force_encoding('utf-8')
       ways    = body.scan(/<h2 class="span4">\s*(.*)\s*<\/h2>/).flatten
-      status  = body.scan(/<div class="span8 status-trip (?:confirm-lib)?(?:wait-lib)? size16 uppercase">\s*(.*)\s*<\/div>/).flatten.map{|c| c.strip}
+      status  = body.scan(/<div class="span8 status-trip (?:confirm-lib)?(?:wait-lib)?[^"]+">\s*(.*)\s*<\/div>/).flatten.map{|c| c.strip}
       reste   = body.scan(/<p class="u-overflowHidden">\s+(.*)\s+(.*)\s+<\/p>\s+<\/li>/)
       urls    = body.scan(/<a href="(\/dashboard\/manage-my-booking\/[^"]*)"/).flatten
       reste.each_slice(3).each_with_index{|c, ind|
