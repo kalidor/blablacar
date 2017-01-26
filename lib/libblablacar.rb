@@ -353,7 +353,7 @@ class Blablacar
     res = CGI.unescapeHTML(data.force_encoding('utf-8'))
     t={}
     t[:trip] = res.scan(/<h2 class="pull-left">\s(.*)\s*<\/h2>/).flatten.map{|c| c.strip!}.first.gsub("&rarr;", "->")
-    t[:when] = parse_time(res.scan(/<p class="my-trip-elements size16 push-left no-clear my-trip-date">\s(.*)\s*<\/p>/).flatten.map{|c| c.strip!}.first)
+    t[:when] = parse_time(res.scan(/<p class="my-trip-elements size16 u-left no-clear my-trip-date">\s(.*)\s*<\/p>/).flatten.map{|c| c.strip!}.first)
     t[:seat_url] = res.scan(/<form action="(\/dashboard\/trip\/\d+\/_seatCount\?token=[^"]+)/).flatten.first
     t[:seats] = res.scan(/(?:<input type="text" name="count" class="nb-seats" data-booking-enabled="\d+" data-value-warning="\d+" data-number-min="\d+" data-number-max="\d+" value="(\d+)")/).flatten.first
     t[:who] = res.scan(/<a href="\/membre\/profil\/.*" class="blue">\s*(.*)\s*<\/a>/).flatten.map{|c| c.strip!}
