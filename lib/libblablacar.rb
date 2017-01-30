@@ -280,7 +280,7 @@ class Blablacar
     trips = {}
     ts = body.scan(/"\/dashboard\/trip-offer\/(\d*)\/passengers" class=/).flatten
     stats = body.scan(/visit-stats">Annonce vue (\d+) fois<\/span>/).flatten
-    dates = body.scan(/<p class="my-trip-elements size16 push-left no-clear my-trip-date">\s*(.*)\s*<\/p>/).flatten
+    dates = body.scan(/<p class="my-trip-elements size16 u-left no-clear my-trip-date">\s*(.*)\s*<\/p>/).flatten
     duplicate = body.scan(/<input type="hidden" id="publication_duplicate_\d+__token" name="publication_duplicate_\d+\[_token\]" value="([^"]+)" \/>/).flatten
     ts.each_with_index do |v, i|
       trips[v] = {:trip => v, :stats => stats[i], :date => dates[i], :duplicate => duplicate[i]}
