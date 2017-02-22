@@ -219,7 +219,7 @@ class Virement < Notification
     m = {}
     m[:who] = body.scan(/<li>([^<]*)<\/li>/).flatten
     m[:trip] = body.scan(/(.* &rarr; .*)<br\/>/).flatten.map{|c| c.gsub('&rarr;', '->').strip!}
-    m[:status] = body.scan(/<td class="vertical-middle align-center .* span3">\s*(.*)\s*/).flatten.map{|c| c.gsub('<br/>','')}
+    m[:status] = body.scan(/<td class="u-alignMiddle u-alignCenter .*span3">\s*(.*)\s*/).flatten.map{|c| c.gsub('<br/>','')}
     data = []
     0.step(m[:who].length-1,3) do |i|
       data << [m[:who][i], m[:who][i+1], m[:trip][i/3], m[:status][i/3]]
@@ -322,6 +322,9 @@ class AvisNotification < Notification
       eputs res['location']
       return false
     end
+
+    #req = setup_http_request($avis_req_get, @cookie, {:url => res['location']})
+    #res = @http.request(req)
   end
 
   # Send an avis about the passenger
