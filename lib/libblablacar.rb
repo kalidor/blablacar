@@ -374,7 +374,7 @@ class Blablacar
     t[:note] = res.scan(/<span class="u-textBold u-darkGray">(.*)<\/span><span class="u-gray">/).flatten
     t[:phone] = res.scan(/<span class="mobile*">(.*)<\/span>/).flatten
     t[:seat_taken] = res.scan(/<li class="passenger-seat">(\d) place[s]?<\/li>/).flatten
-    t[:status] = res.scan(/<div class="u-right (?:u-green|u-gray) size16 uppercase">\s*<b>([^<]+)<\/b>\s*<\/div>/).flatten
+    t[:status] = res.scan(/<div class="u-right (?:u-green|u-gray) size16 u-uppercase">\s*<b>([^<]+)<\/b>\s*<\/div>/).flatten
     t[:actual_trip] = res.scan(/<ul class="u-reset passenger-trip size17">\s*<li>\s([a-zA-Zé\ \-]*)\s*<\/li>/).flatten.map{|c| c.strip!;c.gsub!(" - ", " -> ")}
 
     # Insert blanck phone number
@@ -700,7 +700,7 @@ class Blablacar
     dputs __method__.to_s
     req = setup_http_request($profil_request, @cookie, {})
     res = @http.request(req)
-    @current_user = res.body.force_encoding('utf-8').scan(/<option value="\d+"\s*selected="selected">([^<]+)<\/option><\/select>/).first.first
+    @current_user = res.body.force_encoding('utf-8').scan(/data-toggle="dropdown">([^<]*)<span class="Header-navigationAvatar">/).flatten.first
   end
 
   # Get the notifications
