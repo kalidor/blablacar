@@ -11,6 +11,14 @@ Here is what it works:
 + Duplicate passed or planned trip (Please use YYYY/MM/DD) (error are displayed but it works, still working on it)
 + Update number of seats for a trip (Please use YYYY/MM/DD)
 
+The configuration file is a JSON format file. The cookie paramater is used to avoid a re-authentication.
+Here is an example of conf.rc file (full path is: ~/.blablacar/conf.rc, but could be specified in command line):
+```bash
+user: toto@foo.com
+pass: "My!AwesomeP4ssw0rd"
+cookie: /tmp/blablacar.cookie
+```
+
 List planned trip:
 ```bash
 % blablacar.rb -l
