@@ -12,7 +12,7 @@ Here is what it works:
 + Update number of seats for a trip (Please use YYYY/MM/DD)
 
 The configuration file is a JSON format file. The cookie paramater is used to avoid a re-authentication.
-Here is an example of conf.rc file (full path is: ~/.blablacar/conf.rc, but could be specified in command line):
+Here is an example of conf.rc file. The full path is: ~/.blablacar/conf.rc (yes it's a hidden directory), but could be specified in command line:
 ```bash
 user: toto@foo.com
 pass: "My!AwesomeP4ssw0rd"
