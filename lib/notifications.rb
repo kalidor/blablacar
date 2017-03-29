@@ -250,7 +250,7 @@ private
     res = @http.request(money_req)
     body = CGI.unescapeHTML(res.body.force_encoding('utf-8').gsub("<br />", ""))
     @total = body.scan(/Total [^<]+<span class="money-highlight size24 bold">(.*)<\/span>/).flatten.first
-    if not body.include?("Vous n'avez pas d'argent disponible")
+    if not body.include?("Pas d'argent en attente")
       @current = body.scan(/<p class="RequestMoney-available[^"]+">\s*[^<]+<strong>(.*)<\/strong>\./).flatten.first
     else
       @current = ""
