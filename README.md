@@ -1,6 +1,7 @@
+# Blablacar
 Since there is no public API for intreract with your account on Blablacar, I did something to do so.
 
-Here is what it works:
+Here are the functionalities it offers:
 + List planned trip with passengers (tel, note, age, etc.)
 + Respond to a public question
 + Enter trip validation code
@@ -18,6 +19,8 @@ user: toto@foo.com
 pass: "My!AwesomeP4ssw0rd"
 cookie: /tmp/blablacar.cookie
 ```
+
+# Examples
 
 List planned trip:
 ```bash
@@ -123,3 +126,18 @@ Duplicate trip:
 [+] Trip is being processed...
 [+] Trip duplicated
 ```
+
+# Makefile
+
+The Makefile allows the user to install/uninstall the software in their computer. For example, in order not to have to call the program from its location. 
+
+## install
+
+The `make install` rule copies the project to `/usr/local/bin/` and the used libraries into `usr/local/share/blablacar`
+
+## uninstall
+
+This rule removes all the installed files from `/usr/local/bin` and `/usr/local/share`.
+
+NB: These rules may require *root* privileges. Therefore, you may need to run `sudo make install` or `su -c "make install"` ... etc, depending on your platform.
+
