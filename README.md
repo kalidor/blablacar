@@ -135,9 +135,9 @@ The Makefile allows the user to install/uninstall the software in their computer
 
 The `make install` rule copies the project to `/usr/local/bin/` and the used libraries into `usr/local/share/blablacar`
 
-## uninstall
+## uninstall
 
 This rule removes all the installed files from `/usr/local/bin` and `/usr/local/share`.
 
-NB: These rules may require *root* privileges. Therefore, you may need to run `sudo make install` or `su -c "make install"` ... etc, depending on your platform.
+**NB**: These rules may require *root* privileges. Therefore, you may need to run `sudo make install` or `su -c "make install"` ... etc, depending on your platform.
 
