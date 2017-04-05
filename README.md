@@ -126,18 +126,3 @@ Duplicate trip:
 [+] Trip is being processed...
 [+] Trip duplicated
 ```
-
-# Makefile
-
-The Makefile allows the user to install/uninstall the software in their computer. For example, in order not to have to call the program from its location. 
-
-## install
-
-The `make install` rule copies the project to `/usr/local/bin/` and the used libraries into `usr/local/share/blablacar`
-
-## uninstall
-
-This rule removes all the installed files from `/usr/local/bin` and `/usr/local/share`.
-
-**NB**: These rules may require *root* privileges. Therefore, you may need to run `sudo make install` or `su -c "make install"` ... etc, depending on your platform.
-
