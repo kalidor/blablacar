@@ -1,6 +1,7 @@
+# Blablacar
 Since there is no public API for intreract with your account on Blablacar, I did something to do so.
 
-Here is what it works:
+Here are the functionalities it offers:
 + List planned trip with passengers (tel, note, age, etc.)
 + Respond to a public question
 + Enter trip validation code
@@ -18,6 +19,8 @@ user: toto@foo.com
 pass: "My!AwesomeP4ssw0rd"
 cookie: /tmp/blablacar.cookie
 ```
+
+# Examples
 
 List planned trip:
 ```bash
