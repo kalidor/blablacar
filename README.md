@@ -1,6 +1,7 @@
+# Blablacar
 Since there is no public API for intreract with your account on Blablacar, I did something to do so.
 
-Here is what it works:
+Here are the functionalities it offers:
 + List planned trip with passengers (tel, note, age, etc.)
 + Respond to a public question
 + Enter trip validation code
@@ -19,6 +20,18 @@ pass: "My!AwesomeP4ssw0rd"
 cookie: /tmp/blablacar.cookie
 ```
 
+# Installation
+```bash
+$ gem build blablacar.gemspec
+Successfully built RubyGem
+Name: blablacar
+Version: 0.1
+File: blablacar-0.1.gem
+$ gem install blablacar-0.1.gem
+# maybe you have to use sudo to install the gem file
+```
+
+# Examples
 List planned trip:
 ```bash
 % blablacar.rb -l
