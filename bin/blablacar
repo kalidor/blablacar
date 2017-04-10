@@ -5,7 +5,6 @@
 # Published under the terms of the wtfPLv2
 
 require 'optparse'
-$LOAD_PATH.unshift(File.join(File.expand_path(File.dirname(__FILE__)), "lib"))
 require 'libblablacar'
 
 options = {}
@@ -160,7 +159,7 @@ if options[:message]
           puts "[!] Message vide"
           next
         end
-        if blabla.respond_to_question(found[:url], found[:token], response)
+        if blabla.respond_to_question(found[:url], found[:token], found[:encryted_id], response)
           puts "Message envoyé"
           break
         end
@@ -197,16 +196,16 @@ if options[:refuse]
   end
   if not blabla.notifications?
     puts "Aucune notification"
-    return
+  else
+    blabla.notifications.map{|notif|
+      next if not notif.class == AcceptationNotification
+      if notif.refuse(options[:user], options[:trip], options[:reason], options[:comment])
+        puts "[+] Refusé"
+      else
+        puts "[-] Echec"
+      end
+    }
   end
-  blabla.notifications.map{|notif|
-    next if not notif.class == AcceptationNotification
-    if notif.refuse(options[:user], options[:trip], options[:reason], options[:comment])
-      puts "[+] Refusé"
-    else
-      puts "[-] Echec"
-    end
-  }
 end
 
 if options[:acceptation]
@@ -218,18 +217,18 @@ if options[:acceptation]
   end
   if not blabla.notifications?
     puts "None notification"
-    return
-  end
-  blabla.notifications.map{|notif|
-    next if not notif.class == AcceptationNotification
-    if options[:user] == notif.user
-      if notif.accept()
-        puts "[+] Accepté"
-      else
-        puts "[-] Echec"
+  else
+    blabla.notifications.map{|notif|
+      next if not notif.class == AcceptationNotification
+      if options[:user] == notif.user
+        if notif.accept()
+          puts "[+] Accepté"
+        else
+          puts "[-] Echec"
+        end
       end
-    end
-  }
+    }
+  end
 end
 
 if options[:notifications]

@@ -79,7 +79,7 @@ $profil_request = {
 $respond_to_message = {
   :method => Net::HTTP::Post,
   :url => "",
-  :data => "message[content]=%s&message[_token]=%s",
+  :data => "message[content]=%s&message[recipient_encrypted_id]=%s&message[prefilled_question]=&message[_token]=%s",
   :header => ["Content-Type", "application/x-www-form-urlencoded"]
 }
 

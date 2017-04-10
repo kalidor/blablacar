@@ -9,12 +9,11 @@ require 'cgi' # unescape
 require 'json'
 require 'yaml'
 require 'time'
-$LOAD_PATH.unshift(File.expand_path(File.dirname(__FILE__)))
-require 'helpers'
-require 'consts'
-require 'requests'
-require 'errors'
-require 'notifications'
+require 'libblablacar/helpers'
+require 'libblablacar/consts'
+require 'libblablacar/requests'
+require 'libblablacar/errors'
+require 'libblablacar/notifications'
 $CONF = nil
 
 # Save authenticated cookie on disk
@@ -352,7 +351,7 @@ class Blablacar
   def parse_trip(data)
     res = CGI.unescapeHTML(data.force_encoding('utf-8'))
     t={}
-    t[:trip] = res.scan(/<h2 class="pull-left">\s(.*)\s*<\/h2>/).flatten.map{|c| c.strip!}.first.gsub("&rarr;", "->")
+    t[:trip] = res.scan(/<h2 class="u-left">\s(.*)\s*<\/h2>/).flatten.map{|c| c.strip!}.first.gsub("&rarr;", "->")
     t[:when] = parse_time(res.scan(/<p class="my-trip-elements size16 u-left no-clear my-trip-date">\s(.*)\s*<\/p>/).flatten.map{|c| c.strip!}.first)
     t[:seat_url] = res.scan(/<form action="(\/dashboard\/trip\/\d+\/_seatCount\?token=[^"]+)/).flatten.first
     t[:seats] = res.scan(/(?:<input type="text" name="count" class="nb-seats" data-booking-enabled="\d+" data-value-warning="\d+" data-number-min="\d+" data-number-max="\d+" value="(\d+)")/).flatten.first
@@ -447,7 +446,7 @@ class Blablacar
       trip, trip_date = trip.split(",")
     end
     # looking for uniq value for each discussion (url to respond to)
-    urls = body.scan(/<form id="qa"\s*class="[^"]*"\s*action="(\/messages\/respond\/[^"]*)"\s*method="POST"/).flatten
+    urls = body.scan(/<form id="qa"\s*class="[^"]*"\s*action="(\/messages\/send\/[^"]*)"\s*method="POST"/).flatten
     ret = Array.new
     # to be TESTED
     indexes = Array.new
@@ -471,18 +470,13 @@ class Blablacar
       body_ = body[u..ind]
       u = ind
       token = body_.scan(/message\[_token\]" value="([^"]*)" \/>/).flatten.first
-      if kind == 'public'
-        users = body_.scan(/<a href="\/membre\/profil\/[^"]*" class="u-(?:darkGray)?(?:blue)?">([^<]*)<\/a>/).flatten
-        msgs = body_.scan(/<\/span><\/span>\)<\/span>\s*<\/h3>\s*<p>([^<]*)<\/p>/).flatten
-        msg_hours = body_.scan(/<time class="Speech-date" datetime="[^"]*">([^<]*)<\/time>/).flatten
-        trips = body_.scan(/<span class="Ridename RideName--small">\(<span class="RideName-mainTrip"><span class="RideName-location RideName-location--arrowAfter">(.*)<\/span><span class="RideName-location">(.*)<\/span><\/span>\)/).flatten
-        trip = (0..trips.length-1).step(2).map{|c| "#{trips[c]}->#{trips[c+1]}"}.first
-      else # 'private'
-        users = body_.scan(/<h4>\s*<strong>\s*([^:]*) :\s*<\/strong>\s*<\/h4>/).flatten # PRIVATE
-        msgs = body_.scan(/<\/h4>\s*<p>"([^"]*)"<\/p>/).flatten # PRIVATE
-        msg_hours = body_.scan(/<p class="msg-date clearfix">\s*([^<]*)\s*</).flatten.map{|m| m.strip.chomp} # PRIVATE
-      end
-      tmp = {:msg_user => users.first, :url => t, :token => token, :trip_date => trip_date, :trip => trip}
+      encrypted_id = body.scan(/name="message\[recipient_encrypted_id\]" value="([^"]*)"/).flatten
+      users = body_.scan(/<a href="\/membre\/profil\/[^"]*"><img class="[^"]*" title="([^"]*)" alt="[^"]*"/).flatten
+      msg_hours = body_.scan(/<time class="Speech-date" datetime="[^"]*">([^<]*)<\/time>/).flatten
+      trip, trip_date = body_.scan(/<div class="header-thread">\s*<h3>\s*Covoiturage de ([^,]*), (.*)\s*<span/).flatten
+      msgs = body_.scan(/<\/h4>\s*<p>"([^"]*)"<\/p>/).flatten
+      msg_hours = body_.scan(/<p class="msg-date clearfix">\s*([^<]*)\s*</).flatten.map{|m| m.strip.chomp}
+      tmp = {:msg_user => users.first, :url => t, :token => token, :encrypted_id => encrypted_id.first, :trip_date => trip_date, :trip => trip}
       tmp[:msgs] = []
       0.upto(msgs.length-1).map{|id|
         # When the current user has already responded
@@ -506,14 +500,6 @@ class Blablacar
     ret
   end
 
-  # Get private messages from link
-  # @param url [String] URL to request
-  # @param check [Boolean] Get our response too
-  # @return [Array] Array of Hash. Hash containing those keys: :msgs_user, :url, :token, :trip_date, :trip, :msgs
-  def get_private_conversations(url, check=nil)
-    get_conversations(url, 'private', check)
-  end
-
   # Get public messages from link
   # @param (see #get_private_conversations)
   # @return (see #get_private_conversations)
@@ -527,9 +513,9 @@ class Blablacar
   # @param token [String] Uniq token to use in order to response to the question
   # @param resp [String] The response message
   # @return [Boolean] true if succeed, false if failed. Could raise on error if something wrong on the network
-  def respond_to_question(url, token, resp)
+  def respond_to_question(url, token, encrypted_id, resp)
     dputs __method__.to_s
-    messages_req = setup_http_request($respond_to_message, @cookie, {:url => url, :arg => [resp, token]})
+    messages_req = setup_http_request($respond_to_message, @cookie, {:url => url, :arg => [resp, encrypted_id, token]})
     res = @http.request(messages_req)
     body = CGI.unescapeHTML(res.body.force_encoding('utf-8'))
     # Checking...
@@ -553,39 +539,25 @@ class Blablacar
   # @param _private [Boolean] If true, look for private message
   # @param all [Boolean] If true, look for every messages, not only unread messages
   # @return [Array] Array of URL
-  def messages_parsing(body, _private=nil, all=nil)
-    term = "/trajet-"
-    term_re = "\\/trajet\-"
-    term = "/messages/show/" if _private
-    term_re = "\\/messages\\/show\\/" if _private
-    if not all
-      unread = nil
-      index = body.index(/<li class="unread">\s*<a href="#{term}/)
-      return [] if not index # means no unread message
-      body = CGI.unescapeHTML(body[0..index+200])
-    else
-      body = CGI.unescapeHTML(body)
-    end
+  def messages_parsing(body)
+    term_re = "\\/messages\\/show\\/"
+    body = CGI.unescapeHTML(body)
     urls = body.scan(/<a href="(#{term_re}[^"]*)"/).flatten
-    urls
+    return urls
   end
 
   # Get public/private message link
   #
   # @param all [Boolean] If true get our response too
-  # @return [Hash] Hash of Array. Keys are :public, :private. Each contains an array of Hash (see #get_private_conversations)
-  def get_messages_link_and_content(all=nil)
+  # @return [Hash] Hash of Array. Keys are :public. Each contains an array of Hash
+  def get_messages_link_and_content()
     dputs __method__.to_s
-    urls = {:public => [], :private => []}
+    urls = {:public => []}
     # public messages
     message_req = setup_http_request($messages, @cookie)
     res = @http.request(message_req)
-    urls[:public] = messages_parsing(res.body.force_encoding('utf-8'), nil, all)
-    # private messages
-    message_req = setup_http_request($private_messages, @cookie)
-    res = @http.request(message_req)
-    urls[:private] = messages_parsing(res.body.force_encoding('utf-8'), true, all)
-    msgs = {:public => [], :private => []}
+    urls[:public] = messages_parsing(res.body.force_encoding('utf-8'))
+    msgs = {:public => []}
     until urls.empty?
       k, uu = urls.shift
       next if uu == nil
@@ -600,7 +572,7 @@ class Blablacar
     return msgs
   end
 
-  # Get ony new messages
+  # Get only new messages
   #
   # @return (see #get_messages_link_and_content)
   def get_new_messages
