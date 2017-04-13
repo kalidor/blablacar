@@ -64,8 +64,7 @@ def setup_http_request(obj, cookie=nil, args={})
   if args.has_key?(:url)
     if args[:url].scan(/%[s|d]/).length > 0
       if args[:url].scan(/%[s|d]/).length != args[:url_arg].length
-        aputs "URL contains %d '%%s' or '%%d' argument... Fix your code" % args[:url].scan(/%[s|d]/).length
-        aputs __callee__
+        ALERT.call(caller_locations, __callee__, "URL contains %d '%%s' or '%%d' argument... Fix your code" % args[:url].scan(/%[s|d]/).length)
         exit 2
       end
       req = obj[:method].new(args[:url] % args[:url_arg])
@@ -76,8 +75,7 @@ def setup_http_request(obj, cookie=nil, args={})
     if args.has_key?(:url_arg)
       if obj[:url].scan(/%[s|d]/).length > 0
         if obj[:url].scan(/%[s|d]/).length != args[:url_arg].length
-          aputs "URL contains %d '%%s' or '%%d' argument... Fix your code" % obj[:url].scan(/%[s|d]/).length
-          aputs __callee__
+          ALERT.call(caller_locations, __callee__, "URL contains %d '%%s' or '%%d' argument... Fix your code" % obj[:url].scan(/%[s|d]/).length)
           exit 2
         end
         req = obj[:method].new(obj[:url] % args[:url_arg])
@@ -109,8 +107,7 @@ def setup_http_request(obj, cookie=nil, args={})
   if obj.has_key?(:data)
     if obj[:data].scan(/%[s|d]/).length > 0
       if obj[:data].scan(/%[s|d]/).length != args[:arg].length
-        aputs "URL contains %d '%%s' or '%%d' argument... Fix your code" % args[:url].scan(/%[s|d]/).length
-        aputs __callee__
+        ALERT.call(caller_locations, __callee__, "Body request contains %d '%%s' or '%%d' argument... Fix your code" % obj[:data].scan(/%[s|d]/).length)
         exit 2
       else
         req.body = obj[:data] % args[:arg]

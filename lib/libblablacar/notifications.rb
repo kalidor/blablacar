@@ -122,7 +122,21 @@ class ValidationNotification < Notification
   #
   # @param data [String] HTTP response body
   def prepare(data)
-    @user = data.first.scan(/renseignez le(?:s)? code(?:.!s)? (?:passager)? de ([^p]*) pour/).flatten.first
+    if not data.first.match(/renseignez les codes de r.servation/)
+      return
+    end
+    get_confirm_req = setup_http_request($dashboard, @cookie, {:url=>@url})
+    res = @http.request(get_confirm_req)
+    loc = res['location']
+    if res.code.to_i != 302 and not loc.start_with?("/dashboard/trip-offer/")
+      eputs "Can't valid the trip.. Error somewhere."
+      return nil
+    end
+    @ret_address = res['location']
+    get_form_confirm_req = setup_http_request($dashboard, @cookie,{:url=>@ret_address})
+    res = @http.request(get_form_confirm_req)
+    @data = find_user_need_confirm(res.body.force_encoding('utf-8'))
+    @user = @data.keys()
     @trip_date = get_date(data.last)
   end
 
@@ -161,25 +175,12 @@ class ValidationNotification < Notification
   # @return [Boolean] true if succeed, false if validation code if bad, nil if the request failed
   def confirm(user,code)
     dputs __method__.to_s
-    get_confirm_req = setup_http_request($dashboard, @cookie, {:url=>@url})
-    res = @http.request(get_confirm_req)
-    loc = res['location']
-    if res.code.to_i != 302 and not loc.start_with?("/dashboard/trip-offer/")
-      eputs "Can't valid the trip.. Error somewhere."
-      return nil
-    end
-    get_form_confirm_req = setup_http_request($dashboard, @cookie,{:url=>loc})
-    res = @http.request(get_form_confirm_req)
-    ret = find_user_need_confirm(res.body.force_encoding('utf-8'))
-    if not ret.keys.include?(user)
-      raise ValidateTripError, "User not found"
-    end
-    confirm_req = setup_http_request($trip_confirmation, @cookie, {:url => ret[user][:url], :arg => [code, ret[user][:token]]})
+    confirm_req = setup_http_request($trip_confirmation, @cookie, {:url => @data[user][:url], :arg => [code, @data[user][:token]]})
     res = @http.request(confirm_req)
     # We get 302 code, and we have to request the first page in order to check if
     # the validation is "Confirmée"
     if res.code.to_i == 302
-      return get_validation_confirmation(loc)
+      return get_validation_confirmation(@ret_address)
     end
     return nil
   end
@@ -296,9 +297,9 @@ class AvisNotification < Notification
     token = res.body.scan(/<input type="hidden" id="rating__token" name="rating\[_token\]" value="([^"]*)" \/>/).flatten.first
     # post for previsualisation
     if driver
-      req = setup_http_request($avis_driver_req_post, @cookie, {:url => url, :arg => [note, comment, driver, token]})
+      req = setup_http_request($avis_driver_req_post, @cookie, {:url => url, :arg => [note, CGI.escape(comment), driver, token]})
     else
-      req = setup_http_request($avis_req_post, @cookie, {:url => url, :arg => [note, comment, token]})
+      req = setup_http_request($avis_req_post, @cookie, {:url => url, :arg => [note, CGI.escape(comment), token]})
     end
     res = @http.request(req)
     if not res['location']

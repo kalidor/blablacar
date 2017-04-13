@@ -252,19 +252,17 @@ if options[:code]
     STDERR.write("Argument nécessaire --user <utilisateur>")
     exit 0
   end
-  i = blabla.notifications.map{|notif| notif.user}.index(options[:user])
+  i = blabla.notifications.map{|notif| notif.user}.flatten.index(options[:user])
   if not i
     STDERR.write("Utilisateur introuvable dans les notifications")
     exit 0
   end
   if blabla.notifications[i].instance_of?(ValidationNotification)
-    if options[:user] == blabla.notifications[i].user
-      puts blabla.notifications[i].desc
-      if blabla.notifications[i].confirm(options[:user], options[:code])
-        puts "[+] Code ok pour #{blabla.notifications[i].user}"
-      else
-        puts "[-] Code ko pour #{blabla.notifications[i].user}"
-      end
+    puts blabla.notifications[i].desc
+    if blabla.notifications[i].confirm(options[:user], options[:code])
+      puts "[+] Code ok pour #{blabla.notifications[i].user}"
+    else
+      puts "[-] Code ko pour #{blabla.notifications[i].user}"
     end
   else
     puts "[-] Code pas nécessaire pour cet utilisateur"
@@ -291,13 +289,13 @@ if options[:avis]
     STDERR.write("A qui voulez-vous envoyé un avis")
     exit 0
   end
-  i = blabla.notifications.map{|notif| notif.user}.index(options[:user])
+  i = blabla.notifications.map{|notif| notif.user}.flatten.index(options[:user])
   if not i
     STDERR.write("Utilisateur introuvable dans les notifications")
     exit 0
   end
   notif = blabla.notifications.map{|notif|
-    if notif.desc.include?("avis") and notif.user.include?(options[:user])
+    if notif.desc.include?("avis") and [notif.user].flatten.include?(options[:user])
       notif
     end
   }

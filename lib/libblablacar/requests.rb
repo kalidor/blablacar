@@ -115,13 +115,19 @@ $avis_req_get = {
 $avis_req_post = {
   :method => Net::HTTP::Post,
   :url => "",
-  :data => "rating[role]=%s&rating[global_rating]=%s&rating[comment]=%s&rating[driving_rating_optional]=1&rating[_token]=%s",
+  :data => "rating[global_rating]=%s&rating[comment]=%s&rating[_token]=%s",
   :header => ["Content-Type", "application/x-www-form-urlencoded"]
 }
 $avis_req_post_confirm = {
   :method => Net::HTTP::Post,
   :url => "",
-  :data => "rating_preview[confirm]=&rating_preview[role]=%s&rating_preview[global_rating]=%s&rating_preview[comment]=%s&rating_preview[driving_rating]=&rating_preview[driving_rating_optional]=1&rating_preview[_token]=%s",
+  :data => "rating_preview[confirm]=&rating_preview[role]=%s&rating_preview[global_rating]=%s&rating_preview[comment]=%s&rating_preview[driving_rating]=&rating_preview[driving_rating_optional]=&rating_preview[_token]=%s",
+  :header => ["Content-Type", "application/x-www-form-urlencoded"]
+}
+$avis_driver_req_post = {
+  :method => Net::HTTP::Post,
+  :url => "",
+  :data => "rating[global_rating]=%s&rating[comment]=%s&rating[driving_rating_optional]=%s&rating[_token]=%s",
   :header => ["Content-Type", "application/x-www-form-urlencoded"]
 }
 $rating_received = {
