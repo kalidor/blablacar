@@ -11,7 +11,7 @@ $tracking = {
 $ident = {
   :method => Net::HTTP::Post,
   :url => "/login_check",
-  :data => "_username=%{user}&_password=%{pass}&_submit=",
+  :data => "_username=%s&_password=%s&_submit=",
   :header => ["Content-Type", "application/x-www-form-urlencoded"],
 }
 

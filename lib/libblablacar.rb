@@ -202,10 +202,7 @@ class Blablacar
   # (Authentication Step2) Post id/passwd to the send_credentials web page
   def send_credentials
     dputs __method__.to_s
-    if $ident[:data].include?("%{user}")
-      $ident[:data] = $ident[:data] % {:user => $CONF['user'], :pass => CGI.escape($CONF['pass'])}
-    end
-    login_req = setup_http_request($ident, @cookie)
+    login_req = setup_http_request($ident, @cookie, {:arg => [$CONF['user'], CGI.escape($CONF['pass'])]})
     res = @http.request(login_req)
     get_cookie(res)
   end
