@@ -1,6 +1,8 @@
 # Blablacar
 Since there is no public API for intreract with your account on Blablacar, I did something to do so.
 
+**EDIT:** It appears something is finally coming out (see  https://dev.blablacar.com/), but just a few functionalities are supported yet.
+
 Here are the functionalities it offers:
 + List planned trip with passengers (tel, note, age, etc.)
 + Respond to a public question
