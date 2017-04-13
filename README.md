@@ -1,4 +1,6 @@
 # Blablacar
+[![Build Status](https://api.travis-ci.org/kalidor/blablacar.svg?branch=master)](https://travis-ci.org/kalidor/blablacar)
+
 Since there is no public API for intreract with your account on Blablacar, I did something to do so.
 
 **EDIT:** It appears something is finally coming out (see  https://dev.blablacar.com/), but just a few functionalities are supported yet.
