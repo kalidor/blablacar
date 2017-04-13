@@ -14,6 +14,6 @@ Gem::Specification.new do |s|
   'lib/libblablacar/notifications.rb',
   'lib/libblablacar/requests.rb']
   s.homepage = 'https://github.com/kalidor/blablacar'
-  s.license = 'wtfPLv2'
+  s.license = 'WTFPL'
   s.require_path = 'lib'
 end
