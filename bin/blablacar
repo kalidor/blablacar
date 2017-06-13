@@ -48,6 +48,7 @@ parser = OptionParser.new do |opts|
   opts.on_tail("#$0 --avis 'Nice trip' --user 'Pierre P' --note 5 --passenger")
   opts.on_tail("#$0 --avis 'Nice trip' --user 'Bob M' --note 5 --driver 5")
   opts.on_tail("#$0 --user 'Bob M' --code ABCXYZ -p")
+  opts.on_tail("#$0 --accept -u 'Lucie D' -T 'Demain à 18h'")
 end
 
 parser.parse!
@@ -374,7 +375,11 @@ if options[:list]
               puts "  |  [ANNULATION] #{s}"
             end
           else
-            puts "  |  %s \xe2\x98\x85 %s (%s) :: [%s seat(s)] - %s" % [trips[id][:who][i], trips[id][:note][i], trips[id][:phone][i], trips[id][:seat_taken][i], trips[id][:actual_trip][i]]
+            to_confirm = nil
+            if trips[id][:reservation][i].start_with?("en attente")
+              to_confirm = true
+            end
+            puts "  |  %s%s \xe2\x98\x85 %s (%s) :: [%s seat(s)] - %s" % [to_confirm == nil ? "" : "[A VALIDER] ", trips[id][:who][i], trips[id][:note][i], trips[id][:phone][i], trips[id][:seat_taken][i], trips[id][:actual_trip][i]]
           end
         }
       end

@@ -1,8 +1,8 @@
 Gem::Specification.new do |s|
   s.name = 'blablacar'
-  s.version = '0.1'
+  s.version = '0.2'
   s.executables << 'blablacar'
-  s.date = '2017-04-05'
+  s.date = '2017-06-13'
   s.summary = 'blablacar command line library'
   s.description = 'blablacar command line to interact with your account on blablacar.fr'
   s.authors = ["Gregory 'kalidor' CHARBONNEAU"]

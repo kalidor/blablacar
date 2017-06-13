@@ -348,6 +348,7 @@ class Blablacar
     t[:trip] = res.scan(/<h2 class="u-left">\s(.*)\s*<\/h2>/).flatten.map{|c| c.strip!}.first.gsub("&rarr;", "->")
     t[:when] = parse_time(res.scan(/<p class="my-trip-elements size16 u-left no-clear my-trip-date">\s(.*)\s*<\/p>/).flatten.map{|c| c.strip!}.first)
     t[:seat_url] = res.scan(/<form action="(\/dashboard\/trip\/\d+\/_seatCount\?token=[^"]+)/).flatten.first
+    t[:reservation] = res.scan(/<b>([^<]*)<\/b>\s*<\/div>\s*<span class="passenger-fullname">/).flatten
     t[:seats] = res.scan(/(?:<input type="text" name="count" class="nb-seats" data-booking-enabled="\d+" data-value-warning="\d+" data-number-min="\d+" data-number-max="\d+" value="(\d+)")/).flatten.first
     t[:who] = res.scan(/<a href="\/membre\/profil\/.*" class="blue">\s*(.*)\s*<\/a>/).flatten.map{|c| c.strip!}
     if t[:who].include?(nil)
@@ -683,7 +684,7 @@ class Blablacar
     if data.first.include?("argent disponible")
       return nil
     end
-    if data.first.include?("Demande de réservation de")
+    if data.first.include?("veut réserver sur votre")
       return AcceptationNotification.new(@http, @cookie, data)
     end
     if data.first.include?("Avez vous voyag")

@@ -133,6 +133,11 @@ Update seat for a trip (set up 2 seats for this trip):
 OK
 ```
 
+Accept a trip pessenger request:
+```
+bin/blablacar --accept -u "Lucie D" -T "Demain à 18h"
+```
+
 Duplicate trip:
 ```
 % blablacar.rb --duplicate "2015/12/12 à 6h" --trip "2015/12/14 à 6h"

@@ -41,7 +41,10 @@ class AcceptationNotification < Notification
   #
   # @param data [String] HTTP response body
   def prepare(data)
-    @user = data.first.scan(/Demande de réservation de (.*)/).flatten.first
+    @user = data.first.force_encoding('utf-8').scan(/(.*) veut réserver sur votre/).flatten.first
+    if not @user
+      raise AcceptationError, "User unknown", caller
+    end
     parse()
   end
 
@@ -59,12 +62,9 @@ class AcceptationNotification < Notification
     @cancel_url = body.scan(/data-url="(\/seat-driver-action.*)"\s*data-show-modal="(?:driverCancel)?"/).flatten.first
     @refuse_url, @accept_url = body.scan(/data-url="(\/seat-driver-action.*)"\s*data-show-modal="(?:pendingRefuse)?(?:pendingAccept)?"/).flatten
     @end_date = body.scan(/strong data-date="([^"]*)"/).flatten.first
-    @trip = body.scan(/<h2 class="pull-left">\s(.*)\s*<\/h2>/).flatten.first.strip.gsub("&rarr;", "->")
-    @trip_date = body.scan(/<p class="my-trip-elements size16 push-left no-clear my-trip-date">\s*(.*)\s*<\/p>/).flatten.first
-    if @user != user
-      raise AcceptationError, "User unknown", caller
-    end
-    if @trip_date != date
+    @trip = body.scan(/<h2 class="u-left">\s(.*)\s*<\/h2>/).flatten.first.strip.gsub("&rarr;", "->")
+    @trip_date = body.scan(/<p class="my-trip-elements size16 u-left no-clear my-trip-date">\s*(.*)\s*<\/p>/).flatten.first
+    if not @trip_date
       raise AcceptationError, "Date doesn't match", caller
     end
     if not @trip
