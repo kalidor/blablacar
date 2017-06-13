@@ -29,4 +29,4 @@ rvm:
  - 2.1.0
  - 2.0.0
 script:
- - gem build blablacar.gemspec && gem install blablacar-0.1.gem
+ - gem build blablacar.gemspec && gem install blablacar-0.2.gem
