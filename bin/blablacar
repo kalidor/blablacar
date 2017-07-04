@@ -160,7 +160,7 @@ if options[:message]
           puts "[!] Message vide"
           next
         end
-        if blabla.respond_to_question(found[:url], found[:token], found[:encryted_id], response)
+        if blabla.respond_to_question(found[:url], found[:token], found[:encrypted_id], response)
           puts "Message envoyé"
           break
         end
