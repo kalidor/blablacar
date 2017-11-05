@@ -61,7 +61,7 @@ end
 # @param args [Hash] Data to add to the request (to the url or in POST request)
 # @return [Net] The complete Net::HTTP object
 def setup_http_request(obj, cookie=nil, args={})
-  if args.has_key?(:url)
+  if args.has_key?(:url) and args[:url] != nil
     if args[:url].scan(/%[s|d]/).length > 0
       if args[:url].scan(/%[s|d]/).length != args[:url_arg].length
         ALERT.call(caller_locations, __callee__, "URL contains %d '%%s' or '%%d' argument... Fix your code" % args[:url].scan(/%[s|d]/).length)
